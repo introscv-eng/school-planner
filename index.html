@@ -416,6 +416,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
+  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -779,7 +780,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 [학년][부서] 태그 제외, 내용 열 너비 680px 넉넉하게 확장] ====================
+  // ==================== [출력/저장 통합 및 비고란 가운데 정렬, 장소/내용 줄바꿈, [학년][부서] 태그 삭제] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     
@@ -816,10 +817,22 @@ function App() {
                     const timeMatch = contentOnly.match(/^([\d:]+~[\d:]+)\s+(.+)$/);
                     if (timeMatch) {
                       const timePart = timeMatch[1];
-                      const descPart = timeMatch[2];
+                      let descPart = timeMatch[2];
+                      
+                      // '교장단 회의, 서부교육지원청 4층 대강당' 같은 경우 쉼표 뒤를 줄바꿈 처리
+                      if (descPart.includes(",")) {
+                        const parts = descPart.split(",");
+                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
+                      }
+
                       remarks.push(`${timePart}<br>${descPart}<br>${formalRole}`);
                     } else {
-                      remarks.push(`${contentOnly}<br>${formalRole}`);
+                      let descPart = contentOnly;
+                      if (descPart.includes(",")) {
+                        const parts = descPart.split(",");
+                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
+                      }
+                      remarks.push(`${descPart}<br>${formalRole}`);
                     }
                   }
                 }
@@ -841,9 +854,9 @@ function App() {
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; }
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
-          .col-content { width: 680px; white-space: pre-wrap; text-align: left; } /* 내용 열 너비 확장으로 2줄 방지 */
+          .col-content { width: 680px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; }
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 내용 가운데 정렬 및 7pt 적용 */
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -859,12 +872,10 @@ function App() {
           </tr>
     `;
 
-    // 엑셀 행사 내용에서 [학년], [부서명] 태그를 제외하고 순수 내용만 추출하는 함수
     const getCleanContentText = (evList) => {
       if (evList.length === 0) return "-";
       return evList.map(ev => {
         let raw = ev.content || "";
-        // [부서] 또는 [학년] 형태의 태그 제거 (예: "[유치원] 코딩놀이" -> "코딩놀이")
         let cleaned = raw.replace(/^\[.*?\]\s*/, "").trim();
         return cleaned;
       }).join("\n");
@@ -1787,11 +1798,11 @@ function App() {
               </div>
               <div>
                 <FieldLabel>행사 내용</FieldLabel>
-                <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 유초이음 음악줄넘기(1교시~3교시, 필로티)" />
+                <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 디지털새싹캠프(9:00~12:00, A1실)" />
               </div>
               <div>
                 <FieldLabel>담당자 (선택)</FieldLabel>
-                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 한예지, 이산미" />
               </div>
               {eventModal.mode === "add" ? (
                 <div>
