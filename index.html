@@ -1791,7 +1791,7 @@ function App() {
               </div>
               <div>
                 <FieldLabel>담당자 (선택)</FieldLabel>
-                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 한예지, 이산미" />
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
               </div>
               {eventModal.mode === "add" ? (
                 <div>
