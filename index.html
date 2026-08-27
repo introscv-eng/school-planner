@@ -780,20 +780,16 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 엑셀 셀 병합 및 비고 스타일링 적용] ====================
+  // ==================== [출력/저장 통합 및 비고란 가운데 정렬, 장소/내용 줄바꿈, [학년][부서] 태그 삭제] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     
-    // 월별 일정인 경우 1일부터 말일까지, 주간 일정인 경우 해당 5일간의 데이터를 기반으로 행 구성
-    const activeDays = isMonth ? monthDays : weekDates;
-
-    // 전체 관리자 일정을 날짜별로 미리 매핑 (셀 병합용 구조)
-    const adminRemarkMap = {};
-    activeDays.forEach(d => {
-      const monDate = startOfWeekMon(d);
+    const getAdminRemarkForDateStrict = (dateObj) => {
+      const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
       const weekAdminData = adminWorkStatus[wKey] || {};
-      const targetDayNum = d.getDate();
+      
+      const targetDayNum = dateObj.getDate();
       const remarks = [];
 
       adminRoles.forEach(role => {
@@ -822,10 +818,13 @@ function App() {
                     if (timeMatch) {
                       const timePart = timeMatch[1];
                       let descPart = timeMatch[2];
+                      
+                      // '교장단 회의, 서부교육지원청 4층 대강당' 같은 경우 쉼표 뒤를 줄바꿈 처리
                       if (descPart.includes(",")) {
                         const parts = descPart.split(",");
                         descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
                       }
+
                       remarks.push(`${timePart}<br>${descPart}<br>${formalRole}`);
                     } else {
                       let descPart = contentOnly;
@@ -842,8 +841,8 @@ function App() {
           }
         }
       });
-      adminRemarkMap[ymd(d)] = remarks.join("<br><br>");
-    });
+      return remarks.join("<br><br>");
+    };
 
     let htmlTableContent = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
@@ -857,7 +856,7 @@ function App() {
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
           .col-content { width: 680px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.2; }
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 내용 가운데 정렬 및 7pt 적용 */
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -882,61 +881,50 @@ function App() {
       }).join("\n");
     };
 
-    // 연속된 동일한 비고 내용을 세로로 병합(rowspan) 계산
-    const rowsData = activeDays.map(d => {
-      const dStr = ymd(d);
-      const dayNum = d.getDate();
-      const dowStr = WEEKDAY_KOR[d.getDay()];
-      const hol = getHolidayName(dStr, customHolidays) || "";
-      const evList = sortEvents(eventsByDate[dStr] || []);
-      const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
-      const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
-      const remarkHtml = adminRemarkMap[dStr] || "-";
-      return { dayNum, dowStr, contentText, managerText, remarkHtml };
-    });
+    if (isMonth) {
+      monthDays.forEach(d => {
+        const dayNum = d.getDate();
+        const dowStr = WEEKDAY_KOR[d.getDay()];
+        const dStr = ymd(d);
+        const hol = getHolidayName(dStr, customHolidays) || "";
+        const evList = sortEvents(eventsByDate[dStr] || []);
+        
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+        const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
-    // 연속 동일 비고 그룹화 계산 (세로 셀 병합 효과)
-    let i = 0;
-    while (i < rowsData.length) {
-      let currentRemark = rowsData[i].remarkHtml;
-      let spanCount = 1;
-      
-      // 내용이 비어있지 않고 '-'가 아닌 경우에만 연속 동일 항목 병합 시도 가능 (또는 '-'끼리 병합)
-      if (currentRemark !== "-") {
-        while (i + spanCount < rowsData.length && rowsData[i + spanCount].remarkHtml === currentRemark) {
-          spanCount++;
-        }
-      } else {
-        while (i + spanCount < rowsData.length && rowsData[i + spanCount].remarkHtml === "-") {
-          spanCount++;
-        }
-      }
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkHtml}</td>
+          </tr>
+        `;
+      });
+    } else {
+      weekDates.forEach(d => {
+        const dayNum = d.getDate();
+        const dowStr = WEEKDAY_KOR[d.getDay()];
+        const dStr = ymd(d);
+        const hol = getHolidayName(dStr, customHolidays) || "";
+        const evList = sortEvents(eventsByDate[dStr] || []);
+        
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+        const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
-      htmlTableContent += `<tr>
-        <td class="col-date">${rowsData[i].dayNum}</td>
-        <td class="col-dow">${rowsData[i].dowStr}</td>
-        <td class="col-content">${rowsData[i].contentText.replace(/\n/g, '<br>')}</td>
-        <td class="col-manager">${rowsData[i].managerText.replace(/\n/g, '<br>')}</td>`;
-
-      if (spanCount > 1) {
-        htmlTableContent += `<td class="col-remark" rowspan="${spanCount}">${currentRemark}</td>`;
-      } else {
-        htmlTableContent += `<td class="col-remark">${currentRemark}</td>`;
-      }
-      htmlTableContent += `</tr>`;
-
-      // 나머지 병합되는 행들은 비고란(col-remark)을 제외하고 렌더링
-      for (let j = 1; j < spanCount; j++) {
-        let rIdx = i + j;
-        htmlTableContent += `<tr>
-          <td class="col-date">${rowsData[rIdx].dayNum}</td>
-          <td class="col-dow">${rowsData[rIdx].dowStr}</td>
-          <td class="col-content">${rowsData[rIdx].contentText.replace(/\n/g, '<br>')}</td>
-          <td class="col-manager">${rowsData[rIdx].managerText.replace(/\n/g, '<br>')}</td>
-        </tr>`;
-      }
-
-      i += spanCount;
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkHtml}</td>
+          </tr>
+        `;
+      });
     }
 
     htmlTableContent += `</table></body></html>`;
@@ -1810,11 +1798,11 @@ function App() {
               </div>
               <div>
                 <FieldLabel>행사 내용</FieldLabel>
-                <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 디지털새싹캠프(9:00~12:00, A1실)" />
+                <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 유초이음 음악줄넘기(1교시~3교시, 필로티)" />
               </div>
               <div>
                 <FieldLabel>담당자 (선택)</FieldLabel>
-                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 한예지, 이산미" />
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
               </div>
               {eventModal.mode === "add" ? (
                 <div>
