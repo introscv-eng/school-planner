@@ -216,7 +216,7 @@ function parseCSV(text) {
   return result;
 }
 
-// 정렬 규칙: 0순위 전체행사 -> 1순위 부서명 가나다순 -> 2순위 학년 순서 -> 동순위 행사명 가나다순
+// 정렬 순서: 0순위 전체행사 -> 1순위 부서명 가나다순 -> 2순위 학년 순서 -> 동순위 행사명 가나다순
 function sortEvents(events) {
   const gradeOrder = GRADES;
   return [...events].sort((a, b) => {
@@ -286,9 +286,12 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
           sortedEvents.map((ev) => (
             <button key={ev.id} onClick={() => onOpenEvent(ev)} className="flex w-full items-start gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/80 transition">
               <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
-              <span className="pt-0.5 text-[13px] leading-snug text-slate-600">
-                {ev.content} {ev.manager && <span className="text-slate-400 font-normal">({ev.manager})</span>}
-              </span>
+              <span className="pt-0.5 text-[13px] leading-snug text-slate-600 font-medium">{ev.content}</span>
+              {ev.manager && (
+                <span className="ml-auto shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                  {ev.manager}
+                </span>
+              )}
             </button>
           ))
         )}
@@ -386,7 +389,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // 폼 상태에 manager(담당자) 필드 추가
+  // manager(담당자) 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -663,7 +666,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력 및 엑셀 다운로드 (첨부 양식 완벽 맞춤)] ====================
+  // ==================== [출력 및 엑셀 다운로드 (양식 완벽 맞춤)] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     let csvRows = [];
@@ -673,7 +676,7 @@ function App() {
       csvRows.push([]);
       csvRows.push(["일자", "요일", "내용", "담당자"]);
       monthDays.forEach(d => {
-        const dayNum = d.getDate(); // 날짜 숫자만 출력 (예: 1, 2...)
+        const dayNum = d.getDate(); // 날짜 숫자만 (예: 1, 2...)
         const dowStr = WEEKDAY_KOR[d.getDay()]; // 요일 (예: 화, 수...)
         const dStr = ymd(d);
         const hol = getHolidayName(dStr, customHolidays) || "";
@@ -682,7 +685,7 @@ function App() {
         if (evList.length === 0) {
           csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
         } else {
-          // 같은 날짜의 행사를 한 칸 안에서 줄바꿈하여 한 줄로 묶기
+          // 같은 날짜의 모든 행사를 한 칸 안에서 줄바꿈하여 한 줄로 묶기
           const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
           const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
           csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
