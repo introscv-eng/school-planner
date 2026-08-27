@@ -115,19 +115,6 @@ const PALETTE = [
   "bg-slate-200 text-slate-700 border-slate-300"
 ];
 
-const TEXT_COLOR_PALETTE = [
-  "text-indigo-600 font-semibold",
-  "text-sky-600 font-semibold",
-  "text-emerald-600 font-semibold",
-  "text-amber-600 font-semibold",
-  "text-rose-600 font-semibold",
-  "text-violet-600 font-semibold",
-  "text-teal-600 font-semibold",
-  "text-fuchsia-600 font-semibold",
-  "text-cyan-600 font-semibold",
-  "text-orange-600 font-semibold"
-];
-
 function hashStr(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -137,11 +124,6 @@ function hashStr(s) {
 function getTagStyle(label) {
   if (!label) return "bg-slate-100 text-slate-400 border-slate-200";
   return PALETTE[hashStr(label) % PALETTE.length];
-}
-
-function getManagerTextStyle(name) {
-  if (!name) return "text-slate-500 font-medium";
-  return TEXT_COLOR_PALETTE[hashStr(name) % TEXT_COLOR_PALETTE.length];
 }
 
 function tagLabel(ev) {
@@ -306,7 +288,7 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
               <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
               <span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
               {ev.manager && (
-                <span className={`ml-auto shrink-0 text-xs font-bold pl-2 ${getManagerTextStyle(ev.manager)}`}>
+                <span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
                   {ev.manager}
                 </span>
               )}
@@ -684,11 +666,12 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 날짜별 교장/교감 일정 매칭 및 글자크기 7pt 적용] ====================
+  // ==================== [출력/저장 통합 및 날짜별 교장/교감 일정 매칭 및 7pt 비고란 적용] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     
-    // 특정 날짜에 해당하는 교장 및 교감(교무/생활 등)의 일정만 엄격하게 파싱하여 추출
+    // 첨부 양식 조건: 교장선생님 / 교감선생님(교무) / 교감선생님(생활) 등 
+    // 시간 \n 내용 \n 직책 형식으로 구성하고, 해당 날짜에 입력된 항목만 엄격히 추출
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -698,11 +681,9 @@ function App() {
       const remarks = [];
 
       adminRoles.forEach(role => {
-        // 교장 또는 교감 직책인 경우에만 추출
         if (role.includes("교장") || role.includes("교감")) {
           const text = weekAdminData[role];
           if (text && text !== "특이사항 없음") {
-            // 직함 명칭 변경: 교장 -> 교장선생님, 교감(교무) -> 교감선생님(교무) 등
             let formalRole = role;
             if (role.includes("교장")) formalRole = "교장선생님";
             else if (role.includes("교감")) {
@@ -715,15 +696,22 @@ function App() {
               const tLine = line.trim();
               if (!tLine) return;
               
-              // 날짜 패턴 매칭 (예: "7(월)", "3(목)", "7일" 등)
               const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
               if (match) {
                 const lineDayNum = parseInt(match[1], 10);
                 if (lineDayNum === targetDayNum) {
-                  // 날짜 부분 제거한 순수 내용 추출 (예: "14:00~16:00 교장단 회의...")
                   const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
                   if (contentOnly) {
-                    remarks.push(`${contentOnly}<br>${formalRole}`);
+                    // 사용자 요청 사항: 시간 쓰고 줄띄우고 내용 쓰고 줄띄우고 직책이 쓰여지게
+                    // contentOnly가 "14:00~16:00 교장단 회의, 서구청..." 형태이므로 시간을 분리
+                    const timeMatch = contentOnly.match(/^([\d:]+~[\d:]+)\s+(.+)$/);
+                    if (timeMatch) {
+                      const timePart = timeMatch[1];
+                      const descPart = timeMatch[2];
+                      remarks.push(`${timePart}<br>${descPart}<br>${formalRole}`);
+                    } else {
+                      remarks.push(`${contentOnly}<br>${formalRole}`);
+                    }
                   }
                 }
               }
@@ -746,7 +734,7 @@ function App() {
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
           .col-content { width: 420px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 글자크기 7pt 및 줄바꿈 적용 */
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 글자크기 7pt 적용 */
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
