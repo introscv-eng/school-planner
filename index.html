@@ -254,7 +254,7 @@ function sortEvents(events) {
   });
 }
 
-function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customHolidays }) {
+function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customHolidays, selectedEventIds, onToggleSelectEvent }) {
   const dateStr = ymd(date);
   const dow = date.getDay();
   const isToday = sameDay(date, today);
@@ -283,17 +283,30 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
         {sortedEvents.length === 0 ? (
           <p className="pt-0.5 text-xs text-slate-300">-</p>
         ) : (
-          sortedEvents.map((ev) => (
-            <button key={ev.id} onClick={() => onOpenEvent(ev)} className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/85 transition">
-              <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
-              <span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
-              {ev.manager && (
-                <span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
-                  {ev.manager}
-                </span>
-              )}
-            </button>
-          ))
+          sortedEvents.map((ev) => {
+            const isChecked = selectedEventIds.has(ev.id);
+            return (
+              <div key={ev.id} className="flex items-center gap-2 group">
+                {/* 행사명(부서/학년 배지) 앞에 네모 체크박스 배치 */}
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggleSelectEvent(ev.id)}
+                  className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
+                  title="선택 삭제 체크"
+                />
+                <button onClick={() => onOpenEvent(ev)} className="flex flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/85 transition min-w-0">
+                  <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
+                  <span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
+                  {ev.manager && (
+                    <span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
+                      {ev.manager}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
       <button onClick={() => onAddEvent(dateStr)} className="flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-full text-slate-300 transition hover:bg-violet-100 hover:text-violet-500" title="이 날짜에 일정 추가">
@@ -350,6 +363,9 @@ function App() {
 
   const [copiedEvent, setCopiedEvent] = useState(null);
 
+  // 다중 선택 삭제를 위한 상태 관리
+  const [selectedEventIds, setSelectedEventIds] = useState(new Set());
+
   // 관리자 직책 명칭 목록 상태 관리
   const [adminRoles, setAdminRoles] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_admin_roles")) || INITIAL_ADMIN_ROLES; } catch { return INITIAL_ADMIN_ROLES; }
@@ -389,7 +405,6 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -514,6 +529,33 @@ function App() {
       return { key: weekKey, label: weekLabel, dayStr: "" };
     }
   }, [adminTargetDate, weekKey, weekLabel]);
+
+  // 체크박스 선택/해제 핸들러
+  const handleToggleSelectEvent = (id) => {
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // 선택된 항목 일괄 삭제 핸들러 (비밀번호 검증 없이 즉시 삭제)
+  const handleBatchDeleteSelected = async () => {
+    if (selectedEventIds.size === 0) {
+      alert("삭제할 일정을 체크박스로 선택해주세요.");
+      return;
+    }
+    if (!window.confirm(`선택한 ${selectedEventIds.size개의} 일정을 정말로 삭제하시겠습니까?`)) return;
+
+    const idsArr = Array.from(selectedEventIds);
+    if (supabase) {
+      await supabase.from('events').delete().in('id', idsArr);
+    }
+    setEvents(prev => prev.filter(ev => !selectedEventIds.has(ev.id)));
+    setSelectedEventIds(new Set());
+    alert("선택한 일정이 삭제되었습니다.");
+  };
 
   // ==================== [관리자 직책명 수정 모달 핸들러] ====================
   const openAdminRoleEdit = () => {
@@ -670,8 +712,6 @@ function App() {
   const handlePrint = () => {
     const isMonth = tab === "month";
     
-    // 첨부 양식 조건: 교장선생님 / 교감선생님(교무) / 교감선생님(생활) 등 
-    // 시간 \n 내용 \n 직책 형식으로 구성하고, 해당 날짜에 입력된 항목만 엄격히 추출
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -702,8 +742,6 @@ function App() {
                 if (lineDayNum === targetDayNum) {
                   const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
                   if (contentOnly) {
-                    // 사용자 요청 사항: 시간 쓰고 줄띄우고 내용 쓰고 줄띄우고 직책이 쓰여지게
-                    // contentOnly가 "14:00~16:00 교장단 회의, 서구청..." 형태이므로 시간을 분리
                     const timeMatch = contentOnly.match(/^([\d:]+~[\d:]+)\s+(.+)$/);
                     if (timeMatch) {
                       const timePart = timeMatch[1];
@@ -734,7 +772,7 @@ function App() {
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
           .col-content { width: 420px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 글자크기 7pt 적용 */
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -1272,8 +1310,16 @@ function App() {
           <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
         </div>
 
-        {/* 일정 추가 & 엑셀 업로드 버튼 */}
+        {/* '선택 삭제', '엑셀 업로드', '일정 추가' 버튼 영역 (요청하신 여백 위치) */}
         <div className="mb-3 flex justify-end gap-2">
+          {selectedEventIds.size > 0 && (
+            <button
+              onClick={handleBatchDeleteSelected}
+              className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-100 transition animate-pulse"
+            >
+              <Trash2Icon size={14} /> 선택 삭제 ({selectedEventIds.size})
+            </button>
+          )}
           <button
             onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
             className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
@@ -1291,14 +1337,14 @@ function App() {
         {tab === "month" ? (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 mb-8">
             {monthDays.map((d, idx) => (
-              <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === monthDays.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} adminRoles={adminRoles} depts={depts} />
+              <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === monthDays.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} selectedEventIds={selectedEventIds} onToggleSelectEvent={handleToggleSelectEvent} />
             ))}
           </div>
         ) : (
           <>
             <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
               {weekDates.map((d, idx) => (
-                <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === weekDates.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} adminRoles={adminRoles} depts={depts} />
+                <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === weekDates.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} selectedEventIds={selectedEventIds} onToggleSelectEvent={handleToggleSelectEvent} />
               ))}
             </div>
 
@@ -1632,7 +1678,7 @@ function App() {
                 <div className="rounded-xl bg-violet-50/70 p-3 border border-violet-100 space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <FieldLabel>기준 날짜 (해당 일자가 내용 앞에 자동 표시)</FieldLabel>
+                      <FieldLabel>기준 날짜 (필수: 해당 일자 비고란에 자동 매칭됩니다)</FieldLabel>
                       <input type="date" value={adminTargetDate} onChange={(e) => setAdminTargetDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-400" />
                     </div>
                     <div className="text-right">
@@ -1657,7 +1703,7 @@ function App() {
 
                 <div>
                   <FieldLabel>{adminTargetRole} 근무 일정 내용 (수정 및 추가)</FieldLabel>
-                  <textarea value={adminCurrentInput} onChange={(e) => setAdminCurrentInput(e.target.value)} rows={3} className={inputCls} placeholder="예) 15:00~20:00 자율장학 (기준 날짜가 앞에 자동 추가됩니다)" />
+                  <textarea value={adminCurrentInput} onChange={(e) => setAdminCurrentInput(e.target.value)} rows={3} className={inputCls} placeholder="예) 14:00~16:00 교장단 회의" />
                   <div className="mt-2 flex justify-end">
                     <button type="button" onClick={stageCurrentAdminItem} disabled={!adminCurrentInput.trim()} className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm ${adminCurrentInput.trim() ? "bg-violet-100 text-violet-700 hover:bg-violet-200 border border-violet-200" : "bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed"}`}>
                       <PlusIcon size={13} /> 임시 추가 (다른 날짜 계속 담기)
@@ -1747,7 +1793,7 @@ function App() {
             <button onClick={addDeptRow} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
             <p className="mt-2 text-[11px] text-slate-400">* 부서명을 삭제하면 해당 부서로 등록된 일정은 '미지정'으로 변경됩니다.</p>
             <div className="mt-4 flex items-center gap-2">
-              <button onClick={closeDeptModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+              <button onClick={closeDeptModal} className="flex-1 rounded-xl border border-slate-200 bg-white py.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
               <button onClick={saveDeptEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장</button>
             </div>
           </Modal>
