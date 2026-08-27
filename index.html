@@ -428,7 +428,7 @@ function App() {
   const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
-  // 업무분장 그룹핑 상태 (학년 + 부서 통합 1쌍)
+  // 업무분장 그룹핑 상태 (학년 + 부서 통합 1쌍 관리)
   const [filterGroups, setFilterGroups] = useState(() => {
     try { 
       const saved = JSON.parse(localStorage.getItem("sp_filter_groups"));
