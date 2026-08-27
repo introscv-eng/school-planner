@@ -384,6 +384,14 @@ function App() {
   const [keyModalOpen, setKeyModalOpen] = useState(false);
   const [keyInput, setKeyInput] = useState("");
 
+  const handleSaveKey = () => {
+    const trimmed = keyInput.trim();
+    const finalKey = trimmed || DEFAULT_SUPABASE_ANON_KEY;
+    localStorage.setItem("sp_anon_key", finalKey);
+    setAnonKey(finalKey);
+    setKeyModalOpen(false);
+  };
+
   const [masterPassword, setMasterPassword] = useState(() => localStorage.getItem("sp_master_pw") || MASTER_PASSWORD_DEFAULT);
   const [masterPwModalOpen, setMasterPwModalOpen] = useState(false);
   const [currentPwInput, setCurrentPwInput] = useState("");
@@ -2316,7 +2324,7 @@ function App() {
           </Modal>
         )}
 
-        {/* 10. 필터 그룹 (업무 분장) 수정 모달 (학년 & 담당부서 통합 관리 완벽 포함) */}
+        {/* 10. 필터 그룹 (업무 분장) 수정 모달 */}
         {groupModalStage === "password" && (
           <Modal title="필터 그룹 설정 인증" onClose={() => setGroupModalStage(null)}>
             <FieldLabel>마스터 비밀번호</FieldLabel>
