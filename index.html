@@ -666,17 +666,21 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 엑셀 다운로드 (너비 70 지정)] ====================
+  // ==================== [출력/저장 통합 및 열 너비(Width) 70 설정 적용] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     let csvRows = [];
 
+    // 엑셀(CSV) 파일에 <colgroup> 또는 XML 태그 방식을 활용하여 내용 열 너비 70 지정
+    // 표준 CSV 파일에서 열 너비는 오직 엑셀 열 너비 지정용 태그나 메타 태그 혹은 HTML 표 서식으로 강제할 수 있습니다.
+    // 여기서는 엑셀에서 바로 너비 70으로 인식할 수 있도록 XML 기반의 스타일 태그와 HTML 표 형태로 렌더링하도록 래핑합니다.
+    
     if (isMonth) {
       csvRows.push([`인천경연초등학교 ${monthLabel} 학사 일정표`]);
       csvRows.push([]);
       csvRows.push(["일자", "요일", "내용", "담당자"]);
       monthDays.forEach(d => {
-        const dayNum = d.getDate(); // 날짜 숫자만 (예: 1, 2...)
+        const dayNum = d.getDate();
         const dowStr = WEEKDAY_KOR[d.getDay()];
         const dStr = ymd(d);
         const hol = getHolidayName(dStr, customHolidays) || "";
@@ -685,7 +689,6 @@ function App() {
         if (evList.length === 0) {
           csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
         } else {
-          // 같은 날짜의 행사를 한 칸 안에서 줄바꿈하여 한 줄로 묶기
           const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
           const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
           csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
@@ -722,9 +725,80 @@ function App() {
       return (cStr.includes(",") || cStr.includes('"') || cStr.includes("\n")) ? `"${cStr.replace(/"/g, '""')}"` : cStr;
     }).join(",")).join("\r\n");
 
-    const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+    // 엑셀에서 열 너비 70(약 500픽셀)이 강제로 적용되도록 HTML XML 형식의 .xls 파일로 다운로드 처리
+    let htmlTableContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
+      <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: .5pt solid #999; padding: 6px; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; vertical-align: middle; }
+          th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+          .col-date { width: 50px; text-align: center; }
+          .col-dow { width: 60px; text-align: center; }
+          .col-content { width: 480px; white-space: pre-wrap; text-align: left; } /* 너비 70 대응 크기 */
+          .col-manager { width: 110px; text-align: center; }
+          .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr><td colspan="4" class="title">${isMonth ? `인천경연초등학교 ${monthLabel} 학사 일정표` : `인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`}</td></tr>
+          <tr>
+            <th class="col-date">일자</th>
+            <th class="col-dow">요일</th>
+            <th class="col-content">내용</th>
+            <th class="col-manager">담당자</th>
+          </tr>
+    `;
+
+    if (isMonth) {
+      monthDays.forEach(d => {
+        const dayNum = d.getDate();
+        const dowStr = WEEKDAY_KOR[d.getDay()];
+        const dStr = ymd(d);
+        const hol = getHolidayName(dStr, customHolidays) || "";
+        const evList = sortEvents(eventsByDate[dStr] || []);
+        
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+          </tr>
+        `;
+      });
+    } else {
+      weekDates.forEach(d => {
+        const dayNum = d.getDate();
+        const dowStr = WEEKDAY_KOR[d.getDay()];
+        const dStr = ymd(d);
+        const hol = getHolidayName(dStr, customHolidays) || "";
+        const evList = sortEvents(eventsByDate[dStr] || []);
+        
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+          </tr>
+        `;
+      });
+    }
+
+    htmlTableContent += `</table></body></html>`;
+
+    const blob = new Blob(["\uFEFF" + htmlTableContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const link = document.createElement("a");
-    const fileName = isMonth ? `인천경연초_행사계획_${viewDate.getFullYear()}년_${viewDate.getMonth() + 1}월.csv` : `인천경연초_주간업무계획_${weekLabel.replace(/[\/\s~]/g, "_")}.csv`;
+    const fileName = isMonth ? `인천경연초_행사계획_${viewDate.getFullYear()}년_${viewDate.getMonth() + 1}월.xls` : `인천경연초_주간업무계획_${weekLabel.replace(/[\/\s~]/g, "_")}.xls`;
     link.href = URL.createObjectURL(blob);
     link.setAttribute("download", fileName);
     document.body.appendChild(link);
@@ -1170,7 +1244,6 @@ function App() {
             </div>
 
             <div className="flex items-center gap-1">
-              {/* 출력과 다운로드 버튼을 [출력/저장]으로 통합 */}
               <button onClick={handlePrint} className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-xs" title="출력 및 엑셀 저장">
                 <PrinterIcon size={14} className="text-violet-500" />
                 <span>출력/저장</span>
@@ -1510,7 +1583,7 @@ function App() {
               </div>
               <div>
                 <FieldLabel>담당자 (선택)</FieldLabel>
-                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 한예지, 이산미" />
               </div>
               {eventModal.mode === "add" ? (
                 <div>
