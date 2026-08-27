@@ -107,7 +107,7 @@ const INITIAL_FILTER_GROUPS = {
   names: { grade1: "교감(A) 소관", grade2: "교감(B) 소관" },
   mappings: { 
     grade1: ["유치원", "1학년", "2학년", "3학년"], 
-    grade2: ["4학년", "5학년", "6학년"]
+    grade2: ["4학년", "5학년", "6학년"] 
   }
 };
 
@@ -337,15 +337,15 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
 function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction, groups, onSelectGroup }) {
   return (
     <div>
-      <div className="mb-2.5 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500">{label}</span>
           {editAction}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {groups && groups.map((g, idx) => (
             g.name.trim() && (
-              <button key={idx} onClick={() => onSelectGroup(g.items)} className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition">
+              <button key={idx} onClick={() => onSelectGroup(g.items)} className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition">
                 {g.name} 선택
               </button>
             )
@@ -1558,8 +1558,8 @@ function App() {
           </div>
         </div>
 
-        {/* 필터 영역 (학년 상단에만 그룹 버튼 배치, 부서 줄은 깔끔하게 분리) */}
-        <div className="mb-4 space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        {/* 필터 영역 (학년 상단에만 교감 소관 버튼 배치, 부서 영역은 완전 깔끔하게 분리) */}
+        <div className="mb-4 space-y-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <FilterRow 
             label="학년" 
             items={GRADES} 
@@ -2343,7 +2343,7 @@ function App() {
             </div>
             
             <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
-              * 특정 그룹에 소속되지 않는 학년(예: 미지정)은 선택하지 않고 비워두시면 됩니다.<br/>
+              * 특정 그룹에 소속되지 않는 학년은 선택하지 않고 비워두시면 됩니다.<br/>
               * 설정한 그룹 버튼을 누르면 해당 그룹에 속한 학년들만 한 번에 필터링됩니다.
             </p>
             <div className="mt-3 flex items-center gap-2">
