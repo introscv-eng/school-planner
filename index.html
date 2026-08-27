@@ -780,13 +780,12 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-   // ==================== [출력/저장: 1일 1행 원칙 + 진정한 Alt+Enter 줄바꿈 실현] ====================
+  // ==================== [출력/저장: 1일 1행 + 합리적 관리자 근무 정리 알고리즘 + 진짜 Alt+Enter] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // ★ 핵심 수정: 셀 내부 줄바꿈은 <br style="mso-data-placement:same-cell"> 로 처리해야
-    //   Excel 모든 버전에서 Alt+Enter 효과(한 셀 안 여러 줄)가 확실하게 적용됩니다.
+    // Excel 전용 줄바꿈 변환 함수
     const escapeToExcelCell = (str) => {
       if (!str) return "";
       return String(str)
@@ -794,54 +793,105 @@ function App() {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        // 이스케이프 이후에 줄바꿈을 <br> 태그로 치환 (태그가 그대로 살아남도록 마지막에 처리)
         .replace(/\r\n|\n|\r/g, '<br style="mso-data-placement:same-cell;" />');
     };
 
-    // 해당 날짜의 관리자 근무 내역을 진정한 줄바꿈(\n)으로 통합 추출
-    const getAdminRemarkForDateStrict = (dateObj) => {
+    // ★ 합리적인 관리자 근무 정리 알고리즘 (동일 장소 통합 및 교감 합치기)
+    const getSmartAdminRemarkForDate = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
       const weekAdminData = adminWorkStatus[wKey] || {};
       const targetDayNum = dateObj.getDate();
-      const remarks = [];
+
+      const items = []; // { time, desc, location, role }
 
       adminRoles.forEach(role => {
-        if (role.includes("교장") || role.includes("교감")) {
-          const text = weekAdminData[role];
-          if (text && text !== "특이사항 없음") {
-            let formalRole = role;
-            if (role.includes("교장")) formalRole = "교장선생님";
-            else if (role.includes("교감")) {
-              const subType = role.match(/$$(.*?)$$/);
-              formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
-            }
+        const text = weekAdminData[role];
+        if (text && text !== "특이사항 없음") {
+          const lines = text.split(/\r\n|\n/);
+          lines.forEach(line => {
+            const tLine = line.trim();
+            if (!tLine) return;
 
-            const lines = text.split(/\r\n|\n/);
-            lines.forEach(line => {
-              const tLine = line.trim();
-              if (!tLine) return;
-
-              const match = tLine.match(/^(\d{1,2})\s*$$([월화수목금토일])$$/);
-              if (match) {
-                const lineDayNum = parseInt(match[1], 10);
-                if (lineDayNum === targetDayNum) {
-                  const contentOnly = tLine.replace(/^\d{1,2}\s*$$[월화수목금토일]$$\s*/, '').trim();
-                  if (contentOnly) {
-                    let descPart = contentOnly;
-                    if (descPart.includes(",")) {
-                      const parts = descPart.split(",");
-                      descPart = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
-                    }
-                    remarks.push(`${descPart}\n${formalRole}`);
-                  }
+            const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
+            if (match && parseInt(match[1], 10) === targetDayNum) {
+              let contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+              if (contentOnly) {
+                // 시간 추출 (예: 10:00~12:00)
+                let timePart = "";
+                const timeMatch = contentOnly.match(/^([\d:]+~[\d:]+)\s+(.+)$/);
+                if (timeMatch) {
+                  timePart = timeMatch[1];
+                  contentOnly = timeMatch[2];
                 }
+
+                // 내용과 장소 분리 (콤마 기준)
+                let desc = contentOnly;
+                let location = "";
+                if (contentOnly.includes(",")) {
+                  const parts = contentOnly.split(",");
+                  desc = parts[0].trim();
+                  location = parts.slice(1).join(",").trim();
+                }
+
+                let cleanRole = role;
+                if (role.includes("교장")) cleanRole = "교장";
+                else if (role.includes("교감")) cleanRole = "교감";
+
+                items.push({ time: timePart, desc, location, role: cleanRole, rawRole: role });
               }
-            });
-          }
+            }
+          });
         }
       });
-      return remarks.length > 0 ? remarks.join("\n\n") : "";
+
+      if (items.length === 0) return "";
+
+      // 1. 두 교감선생님이 같은 시간, 같은 내용, 같은 장소일 경우 '교감'으로 통합
+      const grouped = [];
+      const 교감items = items.filter(i => i.role === "교감");
+      const 기타items = items.filter(i => i.role !== "교감");
+
+      if (교감items.length === 2) {
+        const [g1, g2] = 교감items;
+        if (g1.time === g2.time && g1.desc === g2.desc && g1.location === g2.location) {
+          grouped.push({ time: g1.time, desc: g1.desc, location: g1.location, displayRole: "교감" });
+        } else {
+          grouped.push({ time: g1.time, desc: g1.desc, location: g1.location, displayRole: g1.rawRole.includes("교무") ? "교감(교무)" : "교감(생활)" });
+          grouped.push({ time: g2.time, desc: g2.desc, location: g2.location, displayRole: g2.rawRole.includes("교무") ? "교감(교무)" : "교감(생활)" });
+        }
+      } else {
+        교감items.forEach(i => {
+          grouped.push({ time: i.time, desc: i.desc, location: i.location, displayRole: i.rawRole.includes("교무") ? "교감(교무)" : i.rawRole.includes("생활") ? "교감(생활)" : "교감" });
+        });
+      }
+
+      기타items.forEach(i => {
+        grouped.push({ time: i.time, desc: i.desc, location: i.location, displayRole: i.rawRole });
+      });
+
+      // 2. 동일한 장소가 여러 번 반복되면 가장 아래에 한 번만 표기하도록 정리
+      const locations = Array.from(new Set(grouped.map(i => i.location).filter(Boolean)));
+      const lines = [];
+
+      grouped.forEach(i => {
+        const timePrefix = i.time ? `${i.time} ` : "";
+        // 장소가 중복될 경우 개별 줄에는 장소 생략하고 아래에 모아줌
+        if (locations.length === 1 && i.location) {
+          lines.push(`${timePrefix}${i.desc} ${i.displayRole}`);
+        } else {
+          const locStr = i.location ? `, ${i.location}` : "";
+          lines.push(`${timePrefix}${i.desc}${locStr} ${i.displayRole}`);
+        }
+      });
+
+      if (locations.length === 1 && locations[0]) {
+        lines.push(locations[0]);
+      } else if (locations.length > 1) {
+        locations.forEach(loc => lines.push(loc));
+      }
+
+      return lines.join("\n");
     };
 
     let htmlTableContent = `
@@ -872,8 +922,8 @@ function App() {
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             font-size: 11pt;
             vertical-align: middle;
-            mso-data-placement: same-cell;  /* 셀 병합 없이 한 셀 안에 여러 줄 유지 */
-            white-space: pre-wrap;           /* 줄바꿈/공백 보존 */
+            mso-data-placement: same-cell;
+            white-space: pre-wrap;
           }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; vertical-align: middle; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; vertical-align: middle; }
@@ -896,7 +946,7 @@ function App() {
           </tr>
     `;
 
-    // 1일 = 무조건 단 1개의 <tr>로 생성 (내용과 담당자는 \n으로 묶어 단일 셀 내에서 Alt+Enter 구현)
+    // 1일 = 무조건 단 1개의 <tr>로 생성 (내용, 담당자, 비고 모두 셀 안에서 Alt+Enter 개행 적용)
     activeDays.forEach(d => {
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -920,12 +970,11 @@ function App() {
           managers.push(ev.manager && ev.manager.trim() ? ev.manager.trim() : "-");
         });
 
-        // 각 일정을 줄바꿈(\n)으로 연결 → escapeToExcelCell 에서 <br>로 변환됨
         contentRaw = contents.join("\n");
         managerRaw = managers.join("\n");
       }
 
-      const remarkRaw = getAdminRemarkForDateStrict(d);
+      const remarkRaw = getSmartAdminRemarkForDate(d);
 
       htmlTableContent += `
           <tr>
