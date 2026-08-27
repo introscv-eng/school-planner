@@ -780,17 +780,17 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 엑셀 비고란 한 셀 병합 해결 (단일 셀 텍스트 줄바꿈 출력)] ====================
+  // ==================== [출력/저장 통합 및 날짜별 비고란 병합 및 담당자 병합 해제] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // 각 날짜(행)별로 교장/교감선생님의 근무 내역을 하나의 셀 안에서 줄바꿈(\n)으로 완벽히 병합되도록 수집
-    const getAdminRemarkForDateStrict = (dateObj) => {
-      const monDate = startOfWeekMon(dateObj);
+    // 각 날짜(행)별 관리자 근무 내역 추출
+    const rowRemarks = activeDays.map(d => {
+      const monDate = startOfWeekMon(d);
       const wKey = ymd(monDate);
       const weekAdminData = adminWorkStatus[wKey] || {};
-      const targetDayNum = dateObj.getDate();
+      const targetDayNum = d.getDate();
       const remarks = [];
 
       adminRoles.forEach(role => {
@@ -821,16 +821,16 @@ function App() {
                       let descPart = timeMatch[2];
                       if (descPart.includes(",")) {
                         const parts = descPart.split(",");
-                        descPart = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
+                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
                       }
-                      remarks.push(`${timePart}\n${descPart}\n${formalRole}`);
+                      remarks.push(`${timePart}<br>${descPart}<br>${formalRole}`);
                     } else {
                       let descPart = contentOnly;
                       if (descPart.includes(",")) {
                         const parts = descPart.split(",");
-                        descPart = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
+                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
                       }
-                      remarks.push(`${descPart}\n${formalRole}`);
+                      remarks.push(`${descPart}<br>${formalRole}`);
                     }
                   }
                 }
@@ -839,9 +839,8 @@ function App() {
           }
         }
       });
-      // 핵심: 여러 일정이 있어도 하나의 셀 안에서 줄바꿈(\n)으로 합쳐져서 칸이 안 쪼개지도록 함
-      return remarks.length > 0 ? remarks.join("\n\n") : "-";
-    };
+      return remarks.length > 0 ? remarks.join("<br><br>") : "-";
+    });
 
     let htmlTableContent = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
@@ -877,30 +876,90 @@ function App() {
         let raw = ev.content || "";
         let cleaned = raw.replace(/^\[.*?\]\s*/, "").trim();
         return cleaned;
-      }).join("\n");
+      });
     };
 
-    activeDays.forEach(d => {
+    // 1단계: 날짜별로 모든 행 데이터를 미리 구성 (담당자 칸은 날짜마다 묶지 않고 개별 행마다 독립적으로 출력)
+    const flatRows = [];
+    activeDays.forEach((d, index) => {
+      const dStr = ymd(d);
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
-      const dStr = ymd(d);
       const hol = getHolidayName(dStr, customHolidays) || "";
       const evList = sortEvents(eventsByDate[dStr] || []);
-      
-      const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
-      const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "").join("\n");
-      const remarkText = getAdminRemarkForDateStrict(d);
+      const remarkHtml = rowRemarks[index];
 
-      htmlTableContent += `
-        <tr>
-          <td class="col-date">${dayNum}</td>
-          <td class="col-dow">${dowStr}</td>
-          <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
-          <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
-          <td class="col-remark">${remarkText.replace(/\n/g, '<br>')}</td>
-        </tr>
-      `;
+      if (evList.length === 0) {
+        flatRows.push({
+          dayNum,
+          dowStr,
+          contentText: hol ? `[휴일] ${hol}` : "-",
+          managerText: "-",
+          remarkHtml,
+          dateKey: dStr
+        });
+      } else {
+        evList.forEach((ev, evIdx) => {
+          flatRows.push({
+            dayNum: evIdx === 0 ? dayNum : "", // 첫 행에만 날짜 표시
+            dowStr: evIdx === 0 ? dowStr : "", // 첫 행에만 요일 표시
+            contentText: (ev.content || "").replace(/^\[.*?\]\s*/, "").trim(),
+            managerText: ev.manager || "-",
+            remarkHtml,
+            dateKey: dStr,
+            isFirstOfDate: evIdx === 0
+          });
+        });
+      }
     });
+
+    // 2단계: 날짜(일자) 칸과 비고란(col-remark)은 같은 날짜끼리 세로 병합(rowspan) 처리, 담당자 칸은 절대 병합하지 않음!
+    let i = 0;
+    while (i < flatRows.length) {
+      let currentDateKey = flatRows[i].dateKey;
+      let spanCount = 1;
+
+      while (i + spanCount < flatRows.length && flatRows[i + spanCount].dateKey === currentDateKey) {
+        spanCount++;
+      }
+
+      htmlTableContent += `<tr>`;
+      
+      // 일자 칸 병합
+      if (spanCount > 1) {
+        htmlTableContent += `<td class="col-date" rowspan="${spanCount}">${flatRows[i].dayNum}</td>`;
+        htmlTableContent += `<td class="col-dow" rowspan="${spanCount}">${flatRows[i].dowStr}</td>`;
+      } else {
+        htmlTableContent += `<td class="col-date">${flatRows[i].dayNum}</td>`;
+        htmlTableContent += `<td class="col-dow">${flatRows[i].dowStr}</td>`;
+      }
+
+      // 내용 (병합 안 함, 개별 출력)
+      htmlTableContent += `<td class="col-content">${flatRows[i].contentText.replace(/\n/g, '<br>')}</td>`;
+      
+      // 담당자 (요청사항: 담당자 칸은 날짜마다 셀 병합 안 함! 행마다 개별 출력)
+      htmlTableContent += `<td class="col-manager">${flatRows[i].managerText.replace(/\n/g, '<br>')}</td>`;
+
+      // 비고란 (요청사항: 비고란은 날짜마다 병합되도록 rowspan 적용)
+      if (spanCount > 1) {
+        htmlTableContent += `<td class="col-remark" rowspan="${spanCount}">${flatRows[i].remarkHtml}</td>`;
+      } else {
+        htmlTableContent += `<td class="col-remark">${flatRows[i].remarkHtml}</td>`;
+      }
+
+      htmlTableContent += `</tr>`;
+
+      // 나머지 서브 행들 렌더링 (일자와 비고는 rowspan으로 묶이므로 td 생략, 내용과 담당자는 개별 렌더링)
+      for (let j = 1; j < spanCount; j++) {
+        let rIdx = i + j;
+        htmlTableContent += `<tr>
+          <td class="col-content">${flatRows[rIdx].contentText.replace(/\n/g, '<br>')}</td>
+          <td class="col-manager">${flatRows[rIdx].managerText.replace(/\n/g, '<br>')}</td>
+        </tr>`;
+      }
+
+      i += spanCount;
+    }
 
     htmlTableContent += `</table></body></html>`;
 
