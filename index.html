@@ -290,7 +290,10 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
           sortedEvents.map((ev) => (
             <button key={ev.id} onClick={() => onOpenEvent(ev)} className="flex w-full items-start gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/80 transition">
               <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
-              <span className="pt-0.5 text-[13px] leading-snug text-slate-600">{ev.content}</span>
+              <span className="pt-0.5 text-[13px] leading-snug text-slate-600">
+                {ev.content}
+                {ev.manager && <span className="ml-1.5 font-semibold text-violet-500">({ev.manager})</span>}
+              </span>
             </button>
           ))
         )}
@@ -388,7 +391,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", password: "" };
+  const emptyForm = { date: ymd(today), dept: "", grade: "", manager: "", content: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [pwCheckInput, setPwCheckInput] = useState("");
@@ -551,11 +554,11 @@ function App() {
   // ==================== [엑셀 샘플 양식 다운로드 & 업로드 파싱] ====================
   const handleDownloadSampleTemplate = () => {
     const sampleRows = [
-      ["날짜(YYYY-MM-DD)", "담당부서", "학년", "행사내용 / 관리자근무내용", "비밀번호(4자리) 또는 직책(관리자용)"],
-      ["2026-10-01", "교무기획", "전체", "10월 개교기념일 행사(09:00~, 강당)", "1234"],
-      ["2026-10-02", "교육정보", "5학년", "학교폭력예방교육(1~3교시, 각 학급 교실)", "1234"],
-      ["2026-10-05", "관리자근무", "관리자", "서구청 출장협의회", "교감(교무)"],
-      ["2026-10-07", "학생생활", "전체", "학교폭력예방 특별교육", "1234"]
+      ["날짜(YYYY-MM-DD)", "담당부서", "학년", "담당자", "행사내용 / 관리자근무내용", "비밀번호(4자리) 또는 직책(관리자용)"],
+      ["2026-10-01", "교무기획", "전체", "홍길동", "10월 개교기념일 행사(09:00~, 강당)", "1234"],
+      ["2026-10-02", "교육정보", "5학년", "김민수", "학교폭력예방교육(1~3교시, 각 학급 교실)", "1234"],
+      ["2026-10-05", "관리자근무", "관리자", "", "서구청 출장협의회", "교감(교무)"],
+      ["2026-10-07", "학생생활", "전체", "이영희", "학교폭력예방 특별교육", "1234"]
     ];
     const csvString = sampleRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
     const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
@@ -589,8 +592,9 @@ function App() {
           const rawDate = row[0] || "";
           const dept = row[1] || "";
           const grade = row[2] || "";
-          const content = row[3] || "";
-          const col4 = row[4] || "1234";
+          const manager = row[3] || "";
+          const content = row[4] || "";
+          const col5 = row[5] || "1234";
 
           let dateStr = rawDate.replace(/\./g, "-").replace(/\//g, "-").trim();
           if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
@@ -599,8 +603,8 @@ function App() {
           }
 
           if (dateStr && content.trim()) {
-            if (dept === "관리자근무" || adminRoles.includes(col4)) {
-              const targetRole = adminRoles.includes(col4) ? col4 : adminRoles[1] || "교감(교무)";
+            if (dept === "관리자근무" || adminRoles.includes(col5)) {
+              const targetRole = adminRoles.includes(col5) ? col5 : adminRoles[1] || "교감(교무)";
               const d = new Date(dateStr);
               if (!isNaN(d.getTime())) {
                 const wKey = ymd(startOfWeekMon(d));
@@ -613,8 +617,9 @@ function App() {
                 date: dateStr,
                 dept: dept === "전체" ? "" : dept,
                 grade: grade === "전체" ? "" : grade,
+                manager: manager.trim(),
                 content: content.trim(),
-                password: col4.replace(/\D/g, "").slice(0, 4) || "1234"
+                password: col5.replace(/\D/g, "").slice(0, 4) || "1234"
               });
             }
           }
@@ -663,145 +668,24 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [인쇄 및 엑셀 다운로드] ====================
-  const handlePrint = () => {
-    const isMonth = tab === "month";
-    const title = isMonth ? `인천경연초등학교 ${monthLabel} 학사 일정표` : `인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`;
-    let contentHtml = "";
-
-    if (isMonth) {
-      contentHtml = `
-        <table style="width:100%; border-collapse:collapse; margin-top:15px; font-size:13px;">
-          <thead>
-            <tr style="background-color:#f1f5f9;">
-              <th style="border:1px solid #cbd5e1; padding:8px; width:90px;">날짜</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; width:70px;">요일</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; width:110px;">휴일/구분</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; text-align:left;">행사 및 학사 일정 내용</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${monthDays.map(d => {
-              const dStr = ymd(d);
-              const dow = d.getDay();
-              const hol = getHolidayName(dStr, customHolidays) || "";
-              const evList = eventsByDate[dStr] || [];
-              const isHoli = dow === 0 || !!hol;
-              const colorStyle = isHoli ? "color:#e11d48; font-weight:bold;" : dow === 6 ? "color:#2563eb;" : "color:#334155;";
-              const evText = evList.length === 0 ? '<span style="color:#cbd5e1;">-</span>' : evList.map(ev => `
-                <div style="margin-bottom:4px;">
-                  <span style="display:inline-block; border:1px solid #cbd5e1; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:bold; background:#f8fafc; margin-right:5px;">
-                    ${tagLabel(ev)}
-                  </span>
-                  <span>${ev.content}</span>
-                </div>
-              `).join("");
-              return `
-                <tr style="background-color:${isHoli ? '#fff1f2' : '#ffffff'};">
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; ${colorStyle}">${dStr}</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; ${colorStyle}">${WEEKDAY_KOR[dow]}요일</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; color:#e11d48; font-weight:bold;">${hol}</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px;">${evText}</td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      `;
-    } else {
-      contentHtml = `
-        <h3 style="font-size:15px; font-weight:bold; margin-top:20px; color:#334155;">1. 주간 학사 및 주요 행사</h3>
-        <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;">
-          <thead>
-            <tr style="background-color:#f1f5f9;">
-              <th style="border:1px solid #cbd5e1; padding:8px; width:100px;">날짜</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; width:70px;">요일</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; width:110px;">휴일/구분</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; text-align:left;">행사 및 일정 내용</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${weekDates.map(d => {
-              const dStr = ymd(d);
-              const dow = d.getDay();
-              const hol = getHolidayName(dStr, customHolidays) || "";
-              const evList = eventsByDate[dStr] || [];
-              const isHoli = dow === 0 || !!hol;
-              const colorStyle = isHoli ? "color:#e11d48; font-weight:bold;" : "color:#334155;";
-              const evText = evList.length === 0 ? '<span style="color:#cbd5e1;">-</span>' : evList.map(ev => `
-                <div style="margin-bottom:4px;">
-                  <span style="display:inline-block; border:1px solid #cbd5e1; border-radius:4px; padding:1px 5px; font-size:11px; font-weight:bold; background:#f8fafc; margin-right:5px;">
-                    ${tagLabel(ev)}
-                  </span>
-                  <span>${ev.content}</span>
-                </div>
-              `).join("");
-              return `
-                <tr style="background-color:${isHoli ? '#fff1f2' : '#ffffff'};">
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; ${colorStyle}">${dStr}</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; ${colorStyle}">${WEEKDAY_KOR[dow]}요일</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px; text-align:center; color:#e11d48; font-weight:bold;">${hol}</td>
-                  <td style="border:1px solid #cbd5e1; padding:6px 8px;">${evText}</td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-        <h3 style="font-size:15px; font-weight:bold; margin-top:25px; color:#334155;">2. 관리자 주간 근무 현황</h3>
-        <table style="width:100%; border-collapse:collapse; margin-top:10px; font-size:13px;">
-          <thead>
-            <tr style="background-color:#f1f5f9;">
-              <th style="border:1px solid #cbd5e1; padding:8px; width:130px;">직책</th>
-              <th style="border:1px solid #cbd5e1; padding:8px; text-align:left;">근무 및 출장 현황</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${adminRoles.map(r => `
-              <tr>
-                <td style="border:1px solid #cbd5e1; padding:8px; text-align:center; font-weight:bold; background-color:#fafafa;">${r}</td>
-                <td style="border:1px solid #cbd5e1; padding:8px; white-space:pre-wrap; color:#334155;">${currentWeekTexts[r] || "특이사항 없음"}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) { alert("팝업 차단을 해제해주세요."); return; }
-    printWindow.document.write(`
-      <!DOCTYPE html><html><head><title>${title}</title><style>
-        @page { size: A4 portrait; margin: 15mm; }
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #1e293b; line-height: 1.5; margin:0; padding:10px; }
-        h1 { font-size: 20px; font-weight: 800; margin: 0 0 4px 0; text-align: center; }
-        p.sub { font-size: 12px; color: #64748b; margin: 0 0 15px 0; text-align: center; }
-      </style></head><body>
-        <h1>${title}</h1>
-        <p class="sub">인천경연초등학교 학사·근무 현황 플래너 (출력일시: ${new Date().toLocaleDateString('ko-KR')})</p>
-        ${contentHtml}
-        <script>window.onload = function() { window.print(); };<\/script>
-      </body></html>
-    `);
-    printWindow.document.close();
-  };
-
+  // ==================== [출력/저장 - 엑셀 파일로 다운로드] ====================
   const handleDownloadExcel = () => {
     const isMonth = tab === "month";
     let csvRows = [];
     if (isMonth) {
       csvRows.push([`인천경연초등학교 ${monthLabel} 학사 일정표`]);
       csvRows.push([]);
-      csvRows.push(["날짜", "요일", "휴일/구분", "담당부서", "학년", "행사 내용"]);
+      csvRows.push(["날짜", "요일", "휴일/구분", "담당부서", "학년", "담당자", "행사 내용"]);
       monthDays.forEach(d => {
         const dStr = ymd(d);
         const dowStr = `${WEEKDAY_KOR[d.getDay()]}요일`;
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = eventsByDate[dStr] || [];
         if (evList.length === 0) {
-          csvRows.push([dStr, dowStr, hol, "", "", "-"]);
+          csvRows.push([dStr, dowStr, hol, "", "", "", "-"]);
         } else {
           evList.forEach(ev => {
-            csvRows.push([dStr, dowStr, hol, ev.dept || "전체", ev.grade || "전체", ev.content || ""]);
+            csvRows.push([dStr, dowStr, hol, ev.dept || "전체", ev.grade || "전체", ev.manager || "", ev.content || ""]);
           });
         }
       });
@@ -809,17 +693,17 @@ function App() {
       csvRows.push([`인천경연초등학교 주간 학사 및 근무 현황 (${weekLabel})`]);
       csvRows.push([]);
       csvRows.push(["[1. 주간 학사 및 주요 행사]"]);
-      csvRows.push(["날짜", "요일", "휴일/구분", "담당부서", "학년", "행사 내용"]);
+      csvRows.push(["날짜", "요일", "휴일/구분", "담당부서", "학년", "담당자", "행사 내용"]);
       weekDates.forEach(d => {
         const dStr = ymd(d);
         const dowStr = `${WEEKDAY_KOR[d.getDay()]}요일`;
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = eventsByDate[dStr] || [];
         if (evList.length === 0) {
-          csvRows.push([dStr, dowStr, hol, "", "", "-"]);
+          csvRows.push([dStr, dowStr, hol, "", "", "", "-"]);
         } else {
           evList.forEach(ev => {
-            csvRows.push([dStr, dowStr, hol, ev.dept || "전체", ev.grade || "전체", ev.content || ""]);
+            csvRows.push([dStr, dowStr, hol, ev.dept || "전체", ev.grade || "전체", ev.manager || "", ev.content || ""]);
           });
         }
       });
@@ -864,6 +748,7 @@ function App() {
         date: dateStr || ymd(today),
         dept: copiedEvent.dept || "",
         grade: copiedEvent.grade || "",
+        manager: copiedEvent.manager || "",
         content: copiedEvent.content || "",
         password: copiedEvent.password || ""
       });
@@ -876,7 +761,7 @@ function App() {
   };
 
   const openEditEvent = (ev) => {
-    setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, content: ev.content, password: ev.password });
+    setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, manager: ev.manager || "", content: ev.content, password: ev.password });
     setPwCheckInput("");
     setPwCheckError("");
     setEventModal({ mode: "edit", data: ev });
@@ -884,7 +769,7 @@ function App() {
 
   const copyCurrentEvent = () => {
     if (!form.content.trim()) return;
-    setCopiedEvent({ dept: form.dept, grade: form.grade, content: form.content, password: form.password });
+    setCopiedEvent({ dept: form.dept, grade: form.grade, manager: form.manager, content: form.content, password: form.password });
     closeEventModal();
   };
 
@@ -1264,7 +1149,7 @@ function App() {
           </button>
         </div>
 
-        {/* 탭 & 출력/다운로드 & 날짜 이동 바 */}
+        {/* 탭 & 출력/저장 & 날짜 이동 바 */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
@@ -1277,13 +1162,9 @@ function App() {
             </div>
 
             <div className="flex items-center gap-1">
-              <button onClick={handlePrint} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-violet-600 transition shadow-xs" title="인쇄/출력">
-                <PrinterIcon size={14} className="text-slate-400" />
-                <span>출력</span>
-              </button>
-              <button onClick={handleDownloadExcel} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition shadow-xs" title="엑셀 다운로드">
+              <button onClick={handleDownloadExcel} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition shadow-xs" title="엑셀 파일로 출력/저장">
                 <DownloadIcon size={14} className="text-emerald-500" />
-                <span>다운로드</span>
+                <span>출력/저장</span>
               </button>
             </div>
           </div>
@@ -1380,7 +1261,7 @@ function App() {
                 <p className="font-bold mb-1">💡 작성 및 업로드 가이드</p>
                 <ol className="list-decimal list-inside space-y-0.5 text-slate-600">
                   <li>아래 <b>[샘플 양식 다운로드]</b>를 받아 엑셀이나 구글 시트에서 작성합니다.</li>
-                  <li>날짜는 <code>2026-10-01</code> 형식으로 적고, 담당부서/학년/행사내용을 채웁니다. (관리자 근무는 담당부서에 <code>관리자근무</code>, 비밀번호 칸에 직책 입력)</li>
+                  <li>날짜는 <code>2026-10-01</code> 형식으로 적고, 담당부서/학년/담당자/행사내용을 채웁니다. (관리자 근무는 담당부서에 <code>관리자근무</code>, 비밀번호 칸에 직책 입력)</li>
                   <li>작성 완료 후 <b>[파일 선택]</b>으로 업로드하고 <b>[DB에 일괄 등록]</b>을 누르면 끝납니다.</li>
                 </ol>
               </div>
@@ -1613,6 +1494,10 @@ function App() {
                     {GRADES.map((g) => ( <option key={g} value={g}>{g}</option> ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <FieldLabel>담당자</FieldLabel>
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
               </div>
               <div>
                 <FieldLabel>행사 내용</FieldLabel>
