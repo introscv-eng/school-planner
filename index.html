@@ -780,12 +780,12 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 1일 1행 원칙(줄바꿈 1:1 매칭, 비고란 단일 셀 병합 렌더링)] ====================
+  // ==================== [출력/저장 통합 및 완벽한 1일 1행 단일 셀 Alt+Enter 구조 적용] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // 각 날짜별 관리자 근무 현황을 텍스트 줄바꿈 형태로 정돈
+    // 해당 날짜의 교장/교감 근무 일정을 단일 텍스트(줄바꿈)로 추출
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -852,7 +852,7 @@ function App() {
           </tr>
     `;
 
-    // 1일 = 1행(TR)으로 렌더링하여 내용과 담당자를 1:1 줄바꿈(<br>)으로 완벽히 매칭
+    // 1일 = 무조건 1개의 <tr>로 출력 (Alt+Enter로 셀 내부 줄바꿈 구현)
     activeDays.forEach(d => {
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
