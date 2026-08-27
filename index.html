@@ -1,10 +1,3 @@
-선생님, 교감 선생님 두 분의 **업무 분장(학년/부서 소관)에 따라 한 번에 필터링**을 할 수 있도록 묶어주는 기능은 학교 현장의 현실을 너무나도 완벽하게 꿰뚫어 보신 정말 탁월한 아이디어입니다!
-
-행정실이나 늘봄지원처럼 별도 운영되는 부서를 자유롭게 빼놓을 수 있고, 매년 이름이나 소관이 바뀌어도 마스터 권한으로 쉽게 수정할 수 있도록 완벽한 **그룹 설정 기능**을 추가했습니다. 또한 부서명이 수정되면 그룹에 지정해 둔 부서명도 자동으로 연동되어 바뀌도록 세심하게 설계했습니다.
-
-아래 최종 완성된 코드를 복사하여 `index.html`에 덮어쓰신 후, 브라우저에서 강력 새로고침(`Ctrl + F5`)을 하시고 우측 상단의 **[⚙️ 필터 그룹 설정]** 버튼을 눌러 확인해 보세요!
-
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -415,11 +408,10 @@ function App() {
   const [customHolidays, setCustomHolidays] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_custom_holidays")) || {}; } catch { return {}; }
   });
-  const [holidayModalStage, setHolidayModalStage] = useState(null);
-  const [holidayPwInput, setHolidayPwInput] = useState("");
-  const [holidayPwError, setHolidayPwError] = useState("");
-  const [newHolDate, setNewHolDate] = useState(ymd(today));
-  const [newHolName, setNewHolName] = useState("재량휴업일");
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false);
+  const [holidayCalendarDate, setHolidayCalendarDate] = useState(new Date());
+  const [selectedHolidayDate, setSelectedHolidayDate] = useState(ymd(new Date()));
+  const [holidayNameInput, setHolidayNameInput] = useState("재량휴업일");
 
   const [notices, setNotices] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_notices")) || {}; } catch { return {}; }
@@ -742,7 +734,6 @@ function App() {
     setAdminRoleModalStage(null);
   };
 
-  // ==================== [필터 그룹(업무분장) 모달 핸들러] ====================
   const openGroupEdit = () => {
     setGroupPwInput(""); setGroupPwError(""); setGroupModalStage("password");
   };
@@ -773,7 +764,6 @@ function App() {
     }
     setGroupModalStage(null);
   };
-
 
   const handleDownloadSampleTemplate = () => {
     const sampleRows = [
@@ -1248,35 +1238,6 @@ function App() {
     }
   };
 
-  const openHolidayModal = () => {
-    setHolidayPwInput(""); setHolidayPwError(""); setHolidayModalStage("password");
-  };
-
-  const submitHolidayPassword = () => {
-    if (holidayPwInput !== masterPassword) { setHolidayPwError("비밀번호가 일치하지 않습니다."); return; }
-    setHolidayModalStage("edit");
-  };
-
-  const addCustomHoliday = async () => {
-    if (!newHolDate || !newHolName.trim()) return;
-    const updated = { ...customHolidays, [newHolDate]: newHolName.trim() };
-    setCustomHolidays(updated);
-    localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
-    if (supabase) {
-      await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
-    }
-  };
-
-  const removeCustomHoliday = async (dateKey) => {
-    const updated = { ...customHolidays };
-    delete updated[dateKey];
-    setCustomHolidays(updated);
-    localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
-    if (supabase) {
-      await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
-    }
-  };
-
   const openAdminInput = (role = 'ALL') => {
     setAdminTargetRole(role);
     setAdminTargetDate(tab === "week" ? ymd(weekStart) : ymd(today));
@@ -1457,7 +1418,6 @@ function App() {
       return { ...e, dept: mapped || "" };
     }));
 
-    // 업무분장 그룹에 등록된 부서 이름도 자동으로 연동 수정
     const updatedFilterGroups = JSON.parse(JSON.stringify(filterGroups));
     ['dept1', 'dept2'].forEach(key => {
       updatedFilterGroups.mappings[key] = updatedFilterGroups.mappings[key]
@@ -1559,7 +1519,7 @@ function App() {
             일정 엑셀 업로드
           </button>
           <button
-            onClick={openHolidayModal}
+            onClick={() => { setHolidayCalendarDate(new Date()); setSelectedHolidayDate(ymd(new Date())); setHolidayNameInput("재량휴업일"); setHolidayModalOpen(true); }}
             className="flex items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 transition shadow-2xs"
           >
             <span>🏖️</span>
@@ -1969,47 +1929,149 @@ function App() {
           </Modal>
         )}
 
-        {/* 3. 재량휴업일 관리 모달 */}
-        {holidayModalStage === "password" && (
-          <Modal title="재량휴업일 관리 인증" onClose={() => setHolidayModalStage(null)}>
-            <FieldLabel>마스터 비밀번호</FieldLabel>
-            <input type="password" autoFocus value={holidayPwInput} onChange={(e) => setHolidayPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitHolidayPassword()} className={inputCls} placeholder="마스터 비밀번호 입력" />
-            {holidayPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{holidayPwError}</p>}
-            <button onClick={submitHolidayPassword} className="mt-4 w-full rounded-xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition">확인</button>
-          </Modal>
-        )}
-
-        {holidayModalStage === "edit" && (
-          <Modal title="학교 재량휴업일 및 휴일 관리" onClose={() => setHolidayModalStage(null)} wide>
+        {/* 3. 재량휴업일 관리 모달 (인터랙티브 캘린더 형태) */}
+        {holidayModalOpen && (
+          <Modal title="학교 재량휴업일 및 휴일 관리" onClose={() => setHolidayModalOpen(false)} wide>
             <div className="space-y-4">
-              <div className="rounded-xl bg-rose-50/60 p-3 border border-rose-100">
-                <p className="text-xs font-bold text-rose-700 mb-2">새 재량휴업일 등록</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input type="date" value={newHolDate} onChange={(e) => setNewHolDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400" />
-                  <input type="text" value={newHolName} onChange={(e) => setNewHolName(e.target.value)} placeholder="휴일 명칭 (예: 개교기념일)" className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400" />
-                  <button onClick={addCustomHoliday} className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-600 transition shrink-0">추가</button>
+              {/* 달력 헤더 및 좌우 이동 */}
+              <div className="flex items-center justify-between rounded-xl bg-rose-50/70 p-3 border border-rose-100">
+                <button 
+                  onClick={() => setHolidayCalendarDate(prev => addMonths(prev, -1))}
+                  className="rounded-lg bg-white p-1.5 text-rose-600 shadow-2xs hover:bg-rose-100 transition"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-extrabold text-rose-800">
+                  {holidayCalendarDate.getFullYear()}년 {holidayCalendarDate.getMonth() + 1}월
+                </span>
+                <button 
+                  onClick={() => setHolidayCalendarDate(prev => addMonths(prev, 1))}
+                  className="rounded-lg bg-white p-1.5 text-rose-600 shadow-2xs hover:bg-rose-100 transition"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* 미니 월별 달력 그리드 */}
+              <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs">
+                <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                  {["일", "월", "화", "수", "목", "금", "토"].map((w, i) => (
+                    <span key={w} className={`text-xs font-bold ${i === 0 ? "text-rose-500" : i === 6 ? "text-blue-500" : "text-slate-500"}`}>{w}</span>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {(() => {
+                    const y = holidayCalendarDate.getFullYear();
+                    const m = holidayCalendarDate.getMonth();
+                    const firstDayIdx = new Date(y, m, 1).getDay();
+                    const lastDate = new Date(y, m + 1, 0).getDate();
+                    const cells = [];
+
+                    for (let i = 0; i < firstDayIdx; i++) {
+                      cells.push(<div key={`empty-${i}`} className="h-8"></div>);
+                    }
+
+                    for (let d = 1; d <= lastDate; d++) {
+                      const dObj = new Date(y, m, d);
+                      const dStr = ymd(dObj);
+                      const isSelected = selectedHolidayDate === dStr;
+                      const hasHol = !!customHolidays[dStr];
+                      const dow = dObj.getDay();
+
+                      cells.push(
+                        <button
+                          key={dStr}
+                          onClick={() => {
+                            setSelectedHolidayDate(dStr);
+                            if (hasHol) setHolidayNameInput(customHolidays[dStr]);
+                          }}
+                          className={`h-9 rounded-lg text-xs font-bold flex flex-col items-center justify-center transition relative ${
+                            isSelected 
+                              ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-300" 
+                              : hasHol 
+                              ? "bg-rose-100 text-rose-700 hover:bg-rose-200 border border-rose-300" 
+                              : dow === 0 
+                              ? "text-rose-500 hover:bg-slate-100" 
+                              : dow === 6 
+                              ? "text-blue-500 hover:bg-slate-100" 
+                              : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span>{d}</span>
+                          {hasHol && <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-rose-500"></span>}
+                        </button>
+                      );
+                    }
+                    return cells;
+                  })()}
                 </div>
               </div>
+
+              {/* 선택된 날짜에 휴일 등록 입력창 */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex flex-col sm:flex-row items-center gap-2">
+                <div className="w-full sm:w-auto flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-700">
+                  <span>선택일: {selectedHolidayDate}</span>
+                </div>
+                <input 
+                  type="text" 
+                  value={holidayNameInput} 
+                  onChange={(e) => setHolidayNameInput(e.target.value)} 
+                  placeholder="휴일 명칭 (예: 재량휴업일)" 
+                  className="flex-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-rose-400"
+                />
+                <button 
+                  onClick={async () => {
+                    if (!selectedHolidayDate || !holidayNameInput.trim()) return;
+                    const updated = { ...customHolidays, [selectedHolidayDate]: holidayNameInput.trim() };
+                    setCustomHolidays(updated);
+                    localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
+                    if (supabase) {
+                      await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
+                    }
+                    alert(`${selectedHolidayDate}일이 '${holidayNameInput.trim()}'(으)로 등록되었습니다.`);
+                  }}
+                  className="w-full sm:w-auto rounded-lg bg-rose-500 px-4 py-2 text-xs font-bold text-white hover:bg-rose-600 transition shrink-0 shadow-sm"
+                >
+                  등록/수정
+                </button>
+              </div>
+
+              {/* 등록된 재량휴업일 목록 */}
               <div>
-                <p className="text-xs font-bold text-slate-500 mb-2">등록된 재량휴업일 목록</p>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                <p className="text-xs font-bold text-slate-500 mb-2">등록된 재량휴업일 및 휴일 목록</p>
+                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
                   {Object.keys(customHolidays).length === 0 ? (
                     <p className="text-xs text-slate-400 py-2 text-center">등록된 재량휴업일이 없습니다.</p>
                   ) : (
-                    Object.entries(customHolidays).map(([dStr, name]) => (
-                      <div key={dStr} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
+                    Object.entries(customHolidays).sort().map(([dStr, name]) => (
+                      <div key={dStr} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs border border-slate-200">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-700">{dStr}</span>
                           <span className="rounded bg-rose-100 text-rose-600 px-2 py-0.5 font-bold text-[11px]">{name}</span>
                         </div>
-                        <button onClick={() => removeCustomHoliday(dStr)} className="text-slate-400 hover:text-rose-500 transition p-1" title="삭제"><XIcon size={14} /></button>
+                        <button 
+                          onClick={async () => {
+                            const updated = { ...customHolidays };
+                            delete updated[dStr];
+                            setCustomHolidays(updated);
+                            localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
+                            if (supabase) {
+                              await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
+                            }
+                          }} 
+                          className="text-slate-400 hover:text-rose-500 transition p-1" 
+                          title="삭제"
+                        >
+                          <XIcon size={14} />
+                        </button>
                       </div>
                     ))
                   )}
                 </div>
               </div>
+
               <div className="pt-2">
-                <button onClick={() => setHolidayModalStage(null)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">닫기</button>
+                <button onClick={() => setHolidayModalOpen(false)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-2xs">닫기</button>
               </div>
             </div>
           </Modal>
@@ -2332,5 +2394,3 @@ document.getElementById('root') && ReactDOM.createRoot(document.getElementById('
 </script>
 </body>
 </html>
-
-```
