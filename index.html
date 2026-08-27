@@ -269,7 +269,6 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   return (
     <div className={`flex gap-3 border-b border-slate-100 px-3 py-2.5 sm:px-4 min-h-[52px] ${rowBg} ${isLast ? "border-b-0" : ""}`}>
       <div className={`flex w-16 shrink-0 flex-col items-start pt-0.5 sm:w-20 ${dateColor}`}>
-        {/* 날짜 앞 체크박스만 깔끔하게 배치 */}
         <div className="flex items-center gap-1.5 mb-1">
           <input
             type="checkbox"
@@ -417,7 +416,6 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -543,7 +541,7 @@ function App() {
     }
   }, [adminTargetDate, weekKey, weekLabel]);
 
-  // 개별 일정 체크박스 토글
+  // 체크박스 선택/해제 핸들러
   const handleToggleSelectEvent = (id) => {
     setSelectedEventIds(prev => {
       const next = new Set(prev);
@@ -781,7 +779,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 날짜별 교장/교감 일정 매칭 및 7pt 비고란 적용] ====================
+  // ==================== [출력/저장 통합 및 [학년][부서] 태그 제외, 내용 열 너비 680px 넉넉하게 확장] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     
@@ -843,7 +841,7 @@ function App() {
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; }
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
-          .col-content { width: 420px; white-space: pre-wrap; text-align: left; }
+          .col-content { width: 680px; white-space: pre-wrap; text-align: left; } /* 내용 열 너비 확장으로 2줄 방지 */
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
           .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
@@ -861,6 +859,17 @@ function App() {
           </tr>
     `;
 
+    // 엑셀 행사 내용에서 [학년], [부서명] 태그를 제외하고 순수 내용만 추출하는 함수
+    const getCleanContentText = (evList) => {
+      if (evList.length === 0) return "-";
+      return evList.map(ev => {
+        let raw = ev.content || "";
+        // [부서] 또는 [학년] 형태의 태그 제거 (예: "[유치원] 코딩놀이" -> "코딩놀이")
+        let cleaned = raw.replace(/^\[.*?\]\s*/, "").trim();
+        return cleaned;
+      }).join("\n");
+    };
+
     if (isMonth) {
       monthDays.forEach(d => {
         const dayNum = d.getDate();
@@ -869,7 +878,7 @@ function App() {
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = sortEvents(eventsByDate[dStr] || []);
         
-        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
         const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
@@ -891,7 +900,7 @@ function App() {
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = sortEvents(eventsByDate[dStr] || []);
         
-        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
         const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
