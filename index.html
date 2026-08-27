@@ -265,13 +265,12 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   const dateColor = isToday ? "text-emerald-600" : isHoliday ? "text-rose-500 font-black" : dow === 6 ? "text-blue-400" : "text-slate-500";
 
   const sortedEvents = sortEvents(events);
-  const monthStr = `${date.getMonth() + 1}월`;
 
   return (
     <div className={`flex gap-3 border-b border-slate-100 px-3 py-2.5 sm:px-4 min-h-[52px] ${rowBg} ${isLast ? "border-b-0" : ""}`}>
       <div className={`flex w-16 shrink-0 flex-col items-start pt-0.5 sm:w-20 ${dateColor}`}>
-        {/* 날짜 위에 '월' 표시 및 해당 월/날짜 체크박스 결합 */}
-        <div className="flex items-center gap-1.5 mb-0.5">
+        {/* 날짜 앞 체크박스만 깔끔하게 배치 */}
+        <div className="flex items-center gap-1.5 mb-1">
           <input
             type="checkbox"
             checked={isDateSelected}
@@ -279,7 +278,6 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
             className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
             title="이 날짜 전체 선택"
           />
-          <span className="text-[10px] font-bold text-slate-400 leading-none">{monthStr}</span>
         </div>
         <div className="flex items-center gap-1 text-sm font-extrabold">
           {date.getDate()}
@@ -419,6 +417,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
+  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -1384,7 +1383,7 @@ function App() {
           <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
         </div>
 
-        {/* 상단 액션 바: 월 전체 선택, 선택 삭제, 엑셀 업로드, 일정 추가 */}
+        {/* 월 전체 선택 체크박스 및 액션 버튼 바 */}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           {tab === "month" && (
             <div className="flex items-center gap-2">
@@ -1682,7 +1681,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => setAdminRoleEditRows(prev => [...prev, { key: `r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 직책 추가</button>
+            <button onClick={() => setAdminRoleEditRows(prev => [...prev, { key: `r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
             <div className="mt-4 flex items-center gap-2">
               <button onClick={() => setAdminRoleModalStage(null)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
               <button onClick={saveAdminRoleEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장</button>
