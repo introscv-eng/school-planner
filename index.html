@@ -401,16 +401,28 @@ function App() {
   const [newHolDate, setNewHolDate] = useState(ymd(today));
   const [newHolName, setNewHolName] = useState("재량휴업일");
 
-  // 공지 및 협의사항 상태 관리
+  // 공지 및 협의사항 상태 관리 (편집 모드 분리)
   const [notices, setNotices] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_notices")) || {}; } catch { return {}; }
   });
   const currentPeriodKey = tab === "month" ? `${viewDate.getFullYear()}-${pad2(viewDate.getMonth() + 1)}` : weekKey;
+  
+  const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
   useEffect(() => {
-    setNoticeInput(notices[currentPeriodKey] || "");
-  }, [currentPeriodKey, notices]);
+    if (!isNoticeEditing) {
+      setNoticeInput(notices[currentPeriodKey] || "");
+    }
+  }, [currentPeriodKey, notices, isNoticeEditing]);
+
+  const handleToggleNoticeEdit = () => {
+    if (isNoticeEditing) {
+      alert("작성 중인 내용이 있습니다. 먼저 '저장' 버튼을 눌러주세요!");
+      return;
+    }
+    setIsNoticeEditing(true);
+  };
 
   const handleSaveNotice = async () => {
     const trimmed = noticeInput.trim();
@@ -421,6 +433,7 @@ function App() {
       updated[currentPeriodKey] = trimmed;
     }
     setNotices(updated);
+    setIsNoticeEditing(false);
     localStorage.setItem("sp_notices", JSON.stringify(updated));
     if (supabase) {
       await supabase.from('admin_status').upsert([{ week_key: 'notices_global_data', data: updated }]);
@@ -433,6 +446,7 @@ function App() {
     delete updated[currentPeriodKey];
     setNotices(updated);
     setNoticeInput("");
+    setIsNoticeEditing(false);
     localStorage.setItem("sp_notices", JSON.stringify(updated));
     if (supabase) {
       await supabase.from('admin_status').upsert([{ week_key: 'notices_global_data', data: updated }]);
@@ -1032,7 +1046,6 @@ function App() {
       `;
     });
 
-    // 공지사항 및 협의사항 행 추가 (내용이 있는 경우만)
     if (currentNoticeText) {
       htmlTableContent += `
           <tr>
@@ -1525,20 +1538,27 @@ function App() {
           <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
         </div>
 
-        {/* 공지 및 협의사항 입력 공간 (담당 부서 필터 바로 밑) */}
+        {/* 공지 및 협의사항 입력 공간 (편집 모드 분리 및 안전장치 적용) */}
         <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-700">공지 및 협의사항 ({tab === "month" ? monthLabel : weekLabel})</span>
             <div className="flex gap-1.5">
-              <button onClick={handleSaveNotice} className="rounded-lg bg-violet-500 px-3 py-1 text-xs font-bold text-white hover:bg-violet-600 transition shadow-2xs">저장</button>
-              <button onClick={handleDeleteNotice} className="rounded-lg bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 transition">삭제</button>
+              {!isNoticeEditing ? (
+                <button onClick={handleToggleNoticeEdit} className="rounded-lg bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700 hover:bg-violet-200 transition shadow-2xs">글쓰기/수정</button>
+              ) : (
+                <>
+                  <button onClick={handleSaveNotice} className="rounded-lg bg-violet-500 px-3 py-1 text-xs font-bold text-white hover:bg-violet-600 transition shadow-2xs">저장</button>
+                  <button onClick={handleDeleteNotice} className="rounded-lg bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 transition">삭제</button>
+                </>
+              )}
             </div>
           </div>
           <textarea
             value={noticeInput}
-            onChange={(e) => setNoticeInput(e.target.value)}
+            onChange={(e) => isNoticeEditing && setNoticeInput(e.target.value)}
+            readOnly={!isNoticeEditing}
             rows={2}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100 transition resize-y min-h-[50px]"
+            className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition resize-y min-h-[50px] ${isNoticeEditing ? "border-violet-400 bg-white ring-2 ring-violet-100 text-slate-700" : "border-slate-200 bg-slate-50 text-slate-500 cursor-default"}`}
             placeholder="예) - 하계 방학 중 공지사항 안내&#10;1. 화장실 변기 교체 공사"
           />
         </div>
