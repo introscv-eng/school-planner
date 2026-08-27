@@ -105,7 +105,12 @@ const MASTER_PASSWORD_DEFAULT = "1234";
 
 const INITIAL_FILTER_GROUPS = {
   names: { grade1: "교감(A) 소관", grade2: "교감(B) 소관", dept1: "교감(A) 소관", dept2: "교감(B) 소관" },
-  mappings: { grade1: [], grade2: [], dept1: [], dept2: [] }
+  mappings: { 
+    grade1: ["유치원", "1학년", "2학년", "3학년"], 
+    grade2: ["4학년", "5학년", "6학년"], 
+    dept1: ["교무기획", "교육정보", "교육연구", "안전자치", "특수교육"], 
+    dept2: ["문화체육", "학생생활", "과학환경"] 
+  }
 };
 
 const PALETTE = [
@@ -421,7 +426,7 @@ function App() {
   const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
-  // 업무분장 그룹핑 상태
+  // 업무분장 그룹핑 상태 (기본값으로 기본 교감 A/B 소관 매핑 탑재)
   const [filterGroups, setFilterGroups] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_filter_groups")) || INITIAL_FILTER_GROUPS; } catch { return INITIAL_FILTER_GROUPS; }
   });
