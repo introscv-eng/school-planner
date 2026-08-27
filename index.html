@@ -401,6 +401,45 @@ function App() {
   const [newHolDate, setNewHolDate] = useState(ymd(today));
   const [newHolName, setNewHolName] = useState("재량휴업일");
 
+  // 공지 및 협의사항 상태 (월별 키 또는 주간별 키 관리)
+  const [notices, setNotices] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sp_notices")) || {}; } catch { return {}; }
+  });
+  const currentPeriodKey = tab === "month" ? `${viewDate.getFullYear()}-${pad2(viewDate.getMonth() + 1)}` : weekKey;
+  const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
+
+  useEffect(() => {
+    setNoticeInput(notices[currentPeriodKey] || "");
+  }, [currentPeriodKey, notices]);
+
+  const handleSaveNotice = async () => {
+    const trimmed = noticeInput.trim();
+    const updated = { ...notices };
+    if (!trimmed) {
+      delete updated[currentPeriodKey];
+    } else {
+      updated[currentPeriodKey] = trimmed;
+    }
+    setNotices(updated);
+    localStorage.setItem("sp_notices", JSON.stringify(updated));
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'notices_global_data', data: updated }]);
+    }
+    alert("공지 및 협의사항이 저장되었습니다.");
+  };
+
+  const handleDeleteNotice = async () => {
+    const updated = { ...notices };
+    delete updated[currentPeriodKey];
+    setNotices(updated);
+    setNoticeInput("");
+    localStorage.setItem("sp_notices", JSON.stringify(updated));
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'notices_global_data', data: updated }]);
+    }
+    alert("공지 및 협의사항이 삭제되었습니다.");
+  };
+
   const supabase = useMemo(() => {
     if (window.supabase && SUPABASE_URL && anonKey && anonKey !== "YOUR_SUPABASE_ANON_KEY_HERE") {
       try { return window.supabase.createClient(SUPABASE_URL, anonKey); } catch (err) { return null; }
@@ -473,6 +512,9 @@ function App() {
           } else if (item.week_key === 'admin_roles_data') {
             setAdminRoles(item.data || INITIAL_ADMIN_ROLES);
             localStorage.setItem("sp_admin_roles", JSON.stringify(item.data || INITIAL_ADMIN_ROLES));
+          } else if (item.week_key === 'notices_global_data') {
+            setNotices(item.data || {});
+            localStorage.setItem("sp_notices", JSON.stringify(item.data || {}));
           } else {
             map[item.week_key] = item.data;
           }
@@ -780,10 +822,11 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장: 1일 1행 + 합리적 관리자 근무 정리 + 내용 헤더 가운데 정렬 및 비고 헤더 크기 일치] ====================
+  // ==================== [출력/저장: 공지사항 포함 최종 엑셀 서식] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
+    const currentNoticeText = (notices[currentPeriodKey] || "").trim();
 
     const escapeToExcelCell = (str) => {
       if (!str) return "";
@@ -925,12 +968,14 @@ function App() {
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
           .col-remark { width: 140px; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.3; }
           
-          /* 헤더 정렬 및 폰트 크기 동기화 규칙 */
           .th-date { text-align: center; }
           .th-dow { text-align: center; }
-          .th-content { text-align: center; font-size: 11pt; } /* '내용' 헤더 가운데 정렬 및 폰트 크기 기준 */
+          .th-content { text-align: center; font-size: 11pt; }
           .th-manager { text-align: center; }
-          .th-remark { text-align: center; font-size: 11pt; }  /* '비고' 헤더도 '내용' 헤더와 글씨 크기 일치 */
+          .th-remark { text-align: center; font-size: 11pt; }
+
+          .notice-title-cell { text-align: center; font-weight: bold; background-color: #f9fafb; font-size: 10pt; vertical-align: middle; }
+          .notice-content-cell { text-align: left; vertical-align: middle; }
 
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
@@ -986,6 +1031,16 @@ function App() {
           </tr>
       `;
     });
+
+    // 공지 및 협의사항 행 추가 (작성된 내용이 있을 때만 표 맨 아래에 삽입)
+    if (currentNoticeText) {
+      htmlTableContent += `
+          <tr>
+            <td colspan="2" class="notice-title-cell">공지사항 및 협의 사항</td>
+            <td colspan="3" class="notice-content-cell">${escapeToExcelCell(currentNoticeText)}</td>
+          </tr>
+      `;
+    }
 
     htmlTableContent += `</table></body></html>`;
 
@@ -1468,6 +1523,24 @@ function App() {
             </button>
           } />
           <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
+        </div>
+
+        {/* 공지 및 협의사항 입력 공간 (담당 부서 필터 바로 밑) */}
+        <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700">공지 및 협의사항 ({tab === "month" ? monthLabel : weekLabel})</span>
+            <div className="flex gap-1.5">
+              <button onClick={handleSaveNotice} className="rounded-lg bg-violet-500 px-3 py-1 text-xs font-bold text-white hover:bg-violet-600 transition shadow-2xs">저장</button>
+              <button onClick={handleDeleteNotice} className="rounded-lg bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 transition">삭제</button>
+            </div>
+          </div>
+          <textarea
+            value={noticeInput}
+            onChange={(e) => setNoticeInput(e.target.value)}
+            rows={2}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100 transition resize-y min-h-[50px]"
+            placeholder="예) - 하계 방학 중 공지사항 안내&#10;1. 화장실 변기 교체 공사"
+          />
         </div>
 
         {/* 월 전체 선택 체크박스 및 액션 버튼 바 */}
@@ -2041,7 +2114,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(getElementById('root') || document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
