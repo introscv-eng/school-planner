@@ -334,7 +334,7 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   );
 }
 
-function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction, groupNames, onSelectGroup }) {
+function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction }) {
   return (
     <div>
       <div className="mb-2.5 flex items-center justify-between">
@@ -342,22 +342,9 @@ function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction
           <span className="text-xs font-bold text-slate-500">{label}</span>
           {editAction}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {groupNames && groupNames.map((name, idx) => (
-            name.trim() && (
-              <button 
-                key={idx} 
-                onClick={() => onSelectGroup(idx)} 
-                className="rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition inline-flex items-center whitespace-nowrap"
-              >
-                {name} 선택
-              </button>
-            )
-          ))}
-          <div className="ml-1 flex gap-1 border-l border-slate-200 pl-2">
-            <button onClick={onAll} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
-            <button onClick={onNone} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제</button>
-          </div>
+        <div className="flex gap-1 border-l border-slate-200 pl-2">
+          <button onClick={onAll} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
+          <button onClick={onNone} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제</button>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -428,7 +415,7 @@ function App() {
   const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
-  // 업무분장 그룹핑 상태 (강제 초기화 반영)
+  // 업무분장 그룹핑 상태 (학년 + 부서 통합 1쌍)
   const [filterGroups, setFilterGroups] = useState(() => {
     try { 
       const saved = JSON.parse(localStorage.getItem("sp_filter_groups"));
@@ -1588,7 +1575,7 @@ function App() {
           </div>
         </div>
 
-        {/* 필터 영역 (학년 상단에만 통합 그룹 버튼 배치, 부서 줄은 깔끔하게 분리) */}
+        {/* 필터 영역 (학년 상단에만 통합 교감 소관 1쌍 배치, 위쪽 넉넉한 여유 공간 확보) */}
         <div className="mb-4 space-y-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <FilterRow 
             label="학년" 
@@ -2330,10 +2317,10 @@ function App() {
           <Modal title="필터 그룹 (업무 분장) 설정" onClose={() => setGroupModalStage(null)} wide>
             <div className="max-h-[65vh] space-y-6 overflow-y-auto pr-1">
               
-              {/* 그룹 1 (예: 교감 A 소관) 통합 설정 */}
+              {/* 그룹 1 설정 */}
               <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 space-y-4">
                 <div className="space-y-1.5">
-                  <span className="text-xs font-extrabold text-violet-700">1번 그룹 명칭 (학년/부서 공통 적용)</span>
+                  <span className="text-xs font-extrabold text-violet-700">1번 그룹 명칭 (메인 화면 버튼명)</span>
                   <input 
                     type="text" 
                     value={editGroups.names.group1} 
@@ -2372,10 +2359,10 @@ function App() {
                 </div>
               </div>
 
-              {/* 그룹 2 (예: 교감 B 소관) 통합 설정 */}
+              {/* 그룹 2 설정 */}
               <div className="rounded-2xl border border-sky-100 bg-sky-50/40 p-4 space-y-4">
                 <div className="space-y-1.5">
-                  <span className="text-xs font-extrabold text-sky-700">2번 그룹 명칭 (학년/부서 공통 적용)</span>
+                  <span className="text-xs font-extrabold text-sky-700">2번 그룹 명칭 (메인 화면 버튼명)</span>
                   <input 
                     type="text" 
                     value={editGroups.names.group2} 
@@ -2417,7 +2404,7 @@ function App() {
             </div>
             
             <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
-              * 설정한 그룹 버튼을 누르면 해당 그룹에 속한 학년과 담당 부서가 한 번에 싹 필터링됩니다!
+              * 설정한 그룹 버튼을 누르면 해당 그룹에 소속된 학년과 담당 부서가 한 번에 싹 필터링됩니다!
             </p>
             <div className="mt-3 flex items-center gap-2">
               <button onClick={() => setGroupModalStage(null)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
