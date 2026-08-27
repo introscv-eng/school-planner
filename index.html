@@ -684,15 +684,36 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 경고창 없는 순수 탭 분리형 서식 (너비 70 대응)] ====================
+  // ==================== [출력/저장 통합 및 열 너비 70 대응] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
-    let csvRows = [];
+    let htmlTableContent = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
+      <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <style>
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: .5pt solid #999; padding: 6px; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; vertical-align: middle; }
+          th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+          .col-date { width: 50px; text-align: center; }
+          .col-dow { width: 60px; text-align: center; }
+          .col-content { width: 480px; white-space: pre-wrap; text-align: left; }
+          .col-manager { width: 110px; text-align: center; }
+          .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
+        </style>
+      </head>
+      <body>
+        <table>
+          <tr><td colspan="4" class="title">${isMonth ? `인천경연초등학교 ${monthLabel} 학사 일정표` : `인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`}</td></tr>
+          <tr>
+            <th class="col-date">일자</th>
+            <th class="col-dow">요일</th>
+            <th class="col-content">내용</th>
+            <th class="col-manager">담당자</th>
+          </tr>
+    `;
 
     if (isMonth) {
-      csvRows.push([`인천경연초등학교 ${monthLabel} 학사 일정표`]);
-      csvRows.push([]);
-      csvRows.push(["일자", "요일", "내용", "담당자"]);
       monthDays.forEach(d => {
         const dayNum = d.getDate();
         const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -700,19 +721,19 @@ function App() {
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = sortEvents(eventsByDate[dStr] || []);
         
-        if (evList.length === 0) {
-          csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
-        } else {
-          const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
-          const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
-          csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
-        }
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+          </tr>
+        `;
       });
     } else {
-      csvRows.push([`인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`]);
-      csvRows.push([]);
-      csvRows.push(["[1. 주간 학사 및 주요 행사]"]);
-      csvRows.push(["일자", "요일", "내용", "담당자"]);
       weekDates.forEach(d => {
         const dayNum = d.getDate();
         const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -720,27 +741,23 @@ function App() {
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = sortEvents(eventsByDate[dStr] || []);
         
-        if (evList.length === 0) {
-          csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
-        } else {
-          const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
-          const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
-          csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
-        }
+        const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
+        const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+
+        htmlTableContent += `
+          <tr>
+            <td class="col-date">${dayNum}</td>
+            <td class="col-dow">${dowStr}</td>
+            <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+            <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+          </tr>
+        `;
       });
-      csvRows.push([]);
-      csvRows.push(["[2. 관리자 주간 근무 현황]"]);
-      csvRows.push(["직책", "근무 및 출장 내용"]);
-      adminRoles.forEach(r => { csvRows.push([r, currentWeekTexts[r] || "특이사항 없음"]); });
     }
 
-    // 경고창을 발생시키지 않는 순수 TSV/CSV 탭 구분자 방식 적용 (열 너비 70 확보를 위한 탭 문자 조절)
-    const csvString = csvRows.map(row => row.map(cell => {
-      const cStr = String(cell ?? "");
-      return (cStr.includes(",") || cStr.includes('"') || cStr.includes("\n")) ? `"${cStr.replace(/"/g, '""')}"` : cStr;
-    }).join("\t")).join("\r\n");
+    htmlTableContent += `</table></body></html>`;
 
-    const blob = new Blob(["\uFEFF" + csvString], { type: "text/plain;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + htmlTableContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
     const link = document.createElement("a");
     const fileName = isMonth ? `인천경연초_행사계획_${viewDate.getFullYear()}년_${viewDate.getMonth() + 1}월.xls` : `인천경연초_주간업무계획_${weekLabel.replace(/[\/\s~]/g, "_")}.xls`;
     link.href = URL.createObjectURL(blob);
@@ -1699,7 +1716,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
