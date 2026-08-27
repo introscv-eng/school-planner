@@ -416,7 +416,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태 (기본값 빈칸)
+  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -780,12 +780,12 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장: 1일 1행 원칙 (HTML 인라인 XML 줄바꿈 &#10; 적용으로 Alt+Enter 구현)] ====================
+  // ==================== [출력/저장: 1일 1행 원칙 (Alt+Enter 단일 셀 줄바꿈, &#10; 개행 사용)] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // XML/HTML 문자 엔티티 변환 (개행 문자를 &#10; 로 변환하여 엑셀 셀 내 줄바꿈을 완벽 구현)
+    // XML/HTML 이스케이프 및 Alt+Enter를 위한 &#10; 개행 변환
     const escapeToExcelCell = (str) => {
       if (!str) return "";
       return String(str)
@@ -796,7 +796,7 @@ function App() {
         .replace(/\r\n|\n/g, "&#10;");
     };
 
-    // 해당 날짜의 관리자 근무 일정을 줄바꿈(\n) 형태로 통합
+    // 해당 날짜의 관리자 근무 일정을 줄바꿈(\n) 형태로 통합 추출
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -824,7 +824,7 @@ function App() {
                       const parts = descPart.split(",");
                       descPart = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
                     }
-                    remarks.push(descPart);
+                    remarks.push(`${timePartStr(contentOnly, descPart)}${descPart}\n${formalRoleTitle(role)}`);
                   }
                 }
               }
@@ -832,7 +832,41 @@ function App() {
           }
         }
       });
-      return remarks.length > 0 ? remarks.join("\n") : "";
+
+      // 기존 관리자 데이터 텍스트 파싱을 간결하게 수행
+      const cleanRemarks = [];
+      adminRoles.forEach(role => {
+        if (role.includes("교장") || role.includes("교감")) {
+          const text = weekAdminData[role];
+          if (text && text !== "특이사항 없음") {
+            let formalRole = role;
+            if (role.includes("교장")) formalRole = "교장선생님";
+            else if (role.includes("교감")) {
+              const subType = role.match(/\((.*?)\)/);
+              formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
+            }
+
+            const lines = text.split(/\r\n|\n/);
+            lines.forEach(line => {
+              const tLine = line.trim();
+              if (!tLine) return;
+              const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
+              if (match && parseInt(match[1], 10) === targetDayNum) {
+                let contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+                if (contentOnly) {
+                  if (contentOnly.includes(",")) {
+                    const parts = contentOnly.split(",");
+                    contentOnly = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
+                  }
+                  cleanRemarks.push(`${contentOnly}\n${formalRole}`);
+                }
+              }
+            });
+          }
+        }
+      });
+
+      return cleanRemarks.length > 0 ? cleanRemarks.join("\n\n") : "";
     };
 
     let htmlTableContent = `
@@ -855,13 +889,13 @@ function App() {
         <![endif]-->
         <style>
           table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-          th, td { border: 0.5pt solid #999; padding: 5px; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 10pt; vertical-align: top; mso-data-placement: same-cell; white-space: pre-wrap; }
+          th, td { border: 0.5pt solid #999; padding: 6px; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 11pt; vertical-align: middle; mso-data-placement: same-cell; white-space: pre-wrap; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; vertical-align: middle; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; vertical-align: middle; }
-          .col-dow { width: 45px; text-align: center; font-size: 10pt; vertical-align: middle; }
-          .col-content { width: 550px; text-align: left; }
-          .col-manager { width: 100px; text-align: center; }
-          .col-remark { width: 180px; text-align: center; font-size: 8pt; line-height: 1.3; }
+          .col-dow { width: 50px; text-align: center; font-size: 10pt; vertical-align: middle; }
+          .col-content { width: 680px; text-align: left; }
+          .col-manager { width: 100px; text-align: center; font-size: 10pt; }
+          .col-remark { width: 140px; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.3; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -877,7 +911,7 @@ function App() {
           </tr>
     `;
 
-    // 1일당 무조건 1개의 <tr>만 생성하여 Alt+Enter 효과 적용
+    // 1일 = 무조건 1개의 <tr>로만 출력 (셀 안에서 Alt+Enter 줄바꿈 적용 및 담당자 미입력시 '-')
     activeDays.forEach(d => {
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -903,7 +937,44 @@ function App() {
         managerRaw = managers.join("\n");
       }
 
-      const remarkRaw = getAdminRemarkForDateStrict(d);
+      // 비고란 데이터 추출
+      const monDate = startOfWeekMon(d);
+      const wKey = ymd(monDate);
+      const weekAdminData = adminWorkStatus[wKey] || {};
+      const targetDayNum = d.getDate();
+      const cleanRemarks = [];
+
+      adminRoles.forEach(role => {
+        if (role.includes("교장") || role.includes("교감")) {
+          const text = weekAdminData[role];
+          if (text && text !== "특이사항 없음") {
+            let formalRole = role;
+            if (role.includes("교장")) formalRole = "교장선생님";
+            else if (role.includes("교감")) {
+              const subType = role.match(/\((.*?)\)/);
+              formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
+            }
+
+            const lines = text.split(/\r\n|\n/);
+            lines.forEach(line => {
+              const tLine = line.trim();
+              if (!tLine) return;
+              const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
+              if (match && parseInt(match[1], 10) === targetDayNum) {
+                let contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+                if (contentOnly) {
+                  if (contentOnly.includes(",")) {
+                    const parts = contentOnly.split(",");
+                    contentOnly = parts[0].trim() + "\n" + parts.slice(1).join(",").trim();
+                  }
+                  cleanRemarks.push(`${contentOnly}\n${formalRole}`);
+                }
+              }
+            });
+          }
+        }
+      });
+      const remarkRaw = cleanRemarks.length > 0 ? cleanRemarks.join("\n\n") : "";
 
       htmlTableContent += `
         <tr>
@@ -1804,7 +1875,7 @@ function App() {
                   <input type="password" value={pwCheckInput} onChange={(e) => setPwCheckInput(e.target.value)} className={inputCls} placeholder="비밀번호 입력" />
                 </div>
               )}
-              {pwCheckError && <p className="text-xs font-semibold text-rose-500">{pwCheckError}</p>}
+              {pwCheckError && <p className="mt-2 text-xs font-semibold text-rose-500">{pwCheckError}</p>}
               <div className="flex items-center gap-2 pt-1">
                 {eventModal.mode === "edit" && (
                   <>
