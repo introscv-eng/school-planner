@@ -254,7 +254,7 @@ function sortEvents(events) {
   });
 }
 
-function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customHolidays, selectedEventIds, onToggleSelectEvent }) {
+function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customHolidays, selectedEventIds, onToggleSelectEvent, onToggleSelectDate, isDateSelected }) {
   const dateStr = ymd(date);
   const dow = date.getDay();
   const isToday = sameDay(date, today);
@@ -265,10 +265,22 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   const dateColor = isToday ? "text-emerald-600" : isHoliday ? "text-rose-500 font-black" : dow === 6 ? "text-blue-400" : "text-slate-500";
 
   const sortedEvents = sortEvents(events);
+  const monthStr = `${date.getMonth() + 1}월`;
 
   return (
     <div className={`flex gap-3 border-b border-slate-100 px-3 py-2.5 sm:px-4 min-h-[52px] ${rowBg} ${isLast ? "border-b-0" : ""}`}>
       <div className={`flex w-16 shrink-0 flex-col items-start pt-0.5 sm:w-20 ${dateColor}`}>
+        {/* 날짜 위에 '월' 표시 및 해당 월/날짜 체크박스 결합 */}
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <input
+            type="checkbox"
+            checked={isDateSelected}
+            onChange={() => onToggleSelectDate(dateStr, events)}
+            className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
+            title="이 날짜 전체 선택"
+          />
+          <span className="text-[10px] font-bold text-slate-400 leading-none">{monthStr}</span>
+        </div>
         <div className="flex items-center gap-1 text-sm font-extrabold">
           {date.getDate()}
           <span className="text-xs font-bold">({WEEKDAY_KOR[dow]})</span>
@@ -292,7 +304,7 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
                   checked={isChecked}
                   onChange={() => onToggleSelectEvent(ev.id)}
                   className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
-                  title="선택 삭제 체크"
+                  title="개별 일정 선택"
                 />
                 <button onClick={() => onOpenEvent(ev)} className="flex flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/85 transition min-w-0">
                   <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
@@ -362,7 +374,7 @@ function App() {
 
   const [copiedEvent, setCopiedEvent] = useState(null);
 
-  // 다중 선택 삭제를 위한 상태 관리 및 비밀번호 인증 모달 상태
+  // 다중 선택 삭제 및 비밀번호 모달 상태
   const [selectedEventIds, setSelectedEventIds] = useState(new Set());
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletePwInput, setDeletePwInput] = useState("");
@@ -407,14 +419,13 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [pwCheckInput, setPwCheckInput] = useState("");
   const [pwCheckError, setPwCheckError] = useState("");
 
-  // 관리자 근무 입력 모달 상태 (동행자 다중 선택 포함)
+  // 관리자 근무 입력 모달 상태
   const [adminModalStage, setAdminModalStage] = useState(null);
   const [adminTargetRole, setAdminTargetRole] = useState(null);
   const [adminTargetDate, setAdminTargetDate] = useState(ymd(today));
@@ -533,7 +544,7 @@ function App() {
     }
   }, [adminTargetDate, weekKey, weekLabel]);
 
-  // 체크박스 선택/해제 핸들러
+  // 개별 일정 체크박스 토글
   const handleToggleSelectEvent = (id) => {
     setSelectedEventIds(prev => {
       const next = new Set(prev);
@@ -542,6 +553,55 @@ function App() {
       return next;
     });
   };
+
+  // 특정 날짜의 모든 일정 토글 (날짜 앞 체크박스)
+  const handleToggleSelectDate = (dateStr, dateEvents) => {
+    const evIds = dateEvents.map(e => e.id);
+    if (evIds.length === 0) return;
+    const allChecked = evIds.every(id => selectedEventIds.has(id));
+
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      evIds.forEach(id => {
+        if (allChecked) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
+
+  // 현재 보이는 월의 모든 일정 토글 (월 전체 선택/해제)
+  const handleToggleSelectCurrentMonth = () => {
+    const currentMonthEventIds = [];
+    monthDays.forEach(d => {
+      const dStr = ymd(d);
+      const evs = eventsByDate[dStr] || [];
+      evs.forEach(e => currentMonthEventIds.push(e.id));
+    });
+
+    if (currentMonthEventIds.length === 0) return;
+    const allChecked = currentMonthEventIds.every(id => selectedEventIds.has(id));
+
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      currentMonthEventIds.forEach(id => {
+        if (allChecked) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
+
+  const isCurrentMonthAllSelected = useMemo(() => {
+    const currentMonthEventIds = [];
+    monthDays.forEach(d => {
+      const dStr = ymd(d);
+      const evs = eventsByDate[dStr] || [];
+      evs.forEach(e => currentMonthEventIds.push(e.id));
+    });
+    if (currentMonthEventIds.length === 0) return false;
+    return currentMonthEventIds.every(id => selectedEventIds.has(id));
+  }, [monthDays, eventsByDate, selectedEventIds]);
 
   // 선택 삭제 버튼 클릭 시 비밀번호 모달 열기
   const openDeleteModal = () => {
@@ -1324,42 +1384,97 @@ function App() {
           <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
         </div>
 
-        {/* '선택 삭제', '엑셀 업로드', '일정 추가' 버튼 영역 */}
-        <div className="mb-3 flex justify-end gap-2">
-          {selectedEventIds.size > 0 && (
-            <button
-              onClick={openDeleteModal}
-              className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-100 transition animate-pulse"
-            >
-              <Trash2Icon size={14} /> 선택 삭제 ({selectedEventIds.size})
-            </button>
+        {/* 상단 액션 바: 월 전체 선택, 선택 삭제, 엑셀 업로드, 일정 추가 */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          {tab === "month" && (
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={isCurrentMonthAllSelected}
+                  onChange={handleToggleSelectCurrentMonth}
+                  className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer"
+                />
+                {viewDate.getMonth() + 1}월 전체 선택
+              </label>
+            </div>
           )}
-          <button
-            onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
-            className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
-          >
-            <UploadCloudIcon size={14} /> 엑셀 일괄 업로드
-          </button>
-          <button
-            onClick={() => openAddEvent(tab === "month" ? ymd(today) : ymd(weekDates[0]))}
-            className="flex items-center gap-1 rounded-xl bg-violet-500 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition"
-          >
-            <PlusIcon size={14} /> 일정 추가
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            {selectedEventIds.size > 0 && (
+              <button
+                onClick={openDeleteModal}
+                className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-100 transition animate-pulse"
+              >
+                <Trash2Icon size={14} /> 선택 삭제 ({selectedEventIds.size})
+              </button>
+            )}
+            <button
+              onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
+              className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
+            >
+              <UploadCloudIcon size={14} /> 엑셀 일괄 업로드
+            </button>
+            <button
+              onClick={() => openAddEvent(tab === "month" ? ymd(today) : ymd(weekDates[0]))}
+              className="flex items-center gap-1 rounded-xl bg-violet-500 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition"
+            >
+              <PlusIcon size={14} /> 일정 추가
+            </button>
+          </div>
         </div>
 
         {tab === "month" ? (
           <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 mb-8">
-            {monthDays.map((d, idx) => (
-              <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === monthDays.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} selectedEventIds={selectedEventIds} onToggleSelectEvent={handleToggleSelectEvent} />
-            ))}
+            {monthDays.map((d, idx) => {
+              const dStr = ymd(d);
+              const dayEvents = eventsByDate[dStr] || [];
+              const evIds = dayEvents.map(e => e.id);
+              const isDateSelected = evIds.length > 0 && evIds.every(id => selectedEventIds.has(id));
+
+              return (
+                <DateRow
+                  key={dStr}
+                  date={d}
+                  today={today}
+                  events={dayEvents}
+                  isLast={idx === monthDays.length - 1}
+                  onAddEvent={openAddEvent}
+                  onOpenEvent={openEditEvent}
+                  customHolidays={customHolidays}
+                  selectedEventIds={selectedEventIds}
+                  onToggleSelectEvent={handleToggleSelectEvent}
+                  onToggleSelectDate={handleToggleSelectDate}
+                  isDateSelected={isDateSelected}
+                />
+              );
+            })}
           </div>
         ) : (
           <>
             <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
-              {weekDates.map((d, idx) => (
-                <DateRow key={ymd(d)} date={d} today={today} events={eventsByDate[ymd(d)] || []} isLast={idx === weekDates.length - 1} onAddEvent={openAddEvent} onOpenEvent={openEditEvent} customHolidays={customHolidays} selectedEventIds={selectedEventIds} onToggleSelectEvent={handleToggleSelectEvent} />
-              ))}
+              {weekDates.map((d, idx) => {
+                const dStr = ymd(d);
+                const dayEvents = eventsByDate[dStr] || [];
+                const evIds = dayEvents.map(e => e.id);
+                const isDateSelected = evIds.length > 0 && evIds.every(id => selectedEventIds.has(id));
+
+                return (
+                  <DateRow
+                    key={dStr}
+                    date={d}
+                    today={today}
+                    events={dayEvents}
+                    isLast={idx === weekDates.length - 1}
+                    onAddEvent={openAddEvent}
+                    onOpenEvent={openEditEvent}
+                    customHolidays={customHolidays}
+                    selectedEventIds={selectedEventIds}
+                    onToggleSelectEvent={handleToggleSelectEvent}
+                    onToggleSelectDate={handleToggleSelectDate}
+                    isDateSelected={isDateSelected}
+                  />
+                );
+              })}
             </div>
 
             {/* 관리자 근무 현황 카드 */}
@@ -1368,7 +1483,6 @@ function App() {
                 <div className="flex items-center gap-1.5">
                   <h2 className="text-sm font-extrabold text-slate-700">관리자 근무 현황</h2>
                   <span className="text-xs font-semibold text-slate-300">{weekLabel}</span>
-                  {/* 관리자 직책 명칭 수정 버튼 추가 */}
                   <button onClick={openAdminRoleEdit} className="ml-1 flex items-center gap-0.5 rounded bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition" title="관리자 직책 명칭 수정">
                     <PencilIcon size={10} /> 직책명 수정
                   </button>
@@ -1568,7 +1682,7 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => setAdminRoleEditRows(prev => [...prev, { key: `r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
+            <button onClick={() => setAdminRoleEditRows(prev => [...prev, { key: `r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 직책 추가</button>
             <div className="mt-4 flex items-center gap-2">
               <button onClick={() => setAdminRoleModalStage(null)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
               <button onClick={saveAdminRoleEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장</button>
