@@ -389,7 +389,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager(담당자) 포함 폼 상태
+  // manager 포함 폼 상태
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -666,7 +666,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력 및 엑셀 다운로드 (양식 완벽 맞춤)] ====================
+  // ==================== [출력/저장 통합 및 엑셀 다운로드 (너비 70 지정)] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     let csvRows = [];
@@ -677,7 +677,7 @@ function App() {
       csvRows.push(["일자", "요일", "내용", "담당자"]);
       monthDays.forEach(d => {
         const dayNum = d.getDate(); // 날짜 숫자만 (예: 1, 2...)
-        const dowStr = WEEKDAY_KOR[d.getDay()]; // 요일 (예: 화, 수...)
+        const dowStr = WEEKDAY_KOR[d.getDay()];
         const dStr = ymd(d);
         const hol = getHolidayName(dStr, customHolidays) || "";
         const evList = sortEvents(eventsByDate[dStr] || []);
@@ -685,7 +685,7 @@ function App() {
         if (evList.length === 0) {
           csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
         } else {
-          // 같은 날짜의 모든 행사를 한 칸 안에서 줄바꿈하여 한 줄로 묶기
+          // 같은 날짜의 행사를 한 칸 안에서 줄바꿈하여 한 줄로 묶기
           const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
           const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
           csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
@@ -1157,7 +1157,7 @@ function App() {
           </button>
         </div>
 
-        {/* 탭 & 출력/다운로드 & 날짜 이동 바 */}
+        {/* 탭 & '출력/저장' 통합 버튼 & 날짜 이동 바 */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
@@ -1170,13 +1170,10 @@ function App() {
             </div>
 
             <div className="flex items-center gap-1">
-              <button onClick={handlePrint} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-violet-600 transition shadow-xs" title="인쇄/출력">
-                <PrinterIcon size={14} className="text-slate-400" />
-                <span>출력</span>
-              </button>
-              <button onClick={handleDownloadExcel} className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition shadow-xs" title="엑셀 다운로드">
-                <DownloadIcon size={14} className="text-emerald-500" />
-                <span>다운로드</span>
+              {/* 출력과 다운로드 버튼을 [출력/저장]으로 통합 */}
+              <button onClick={handlePrint} className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-xs" title="출력 및 엑셀 저장">
+                <PrinterIcon size={14} className="text-violet-500" />
+                <span>출력/저장</span>
               </button>
             </div>
           </div>
@@ -1513,7 +1510,7 @@ function App() {
               </div>
               <div>
                 <FieldLabel>담당자 (선택)</FieldLabel>
-                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 한예지, 이산미" />
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
               </div>
               {eventModal.mode === "add" ? (
                 <div>
