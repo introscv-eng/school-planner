@@ -104,10 +104,10 @@ const WEEKDAY_KOR = ["일", "월", "화", "수", "목", "금", "토"];
 const MASTER_PASSWORD_DEFAULT = "1234";
 
 const INITIAL_FILTER_GROUPS = {
-  names: { grade1: "교감(A) 소관", grade2: "교감(B) 소관" },
+  names: { group1: "교감(A) 소관", group2: "교감(B) 소관" },
   mappings: { 
-    grade1: ["유치원", "1학년", "2학년", "3학년"], 
-    grade2: ["4학년", "5학년", "6학년"] 
+    group1: { grades: ["유치원", "1학년", "2학년", "3학년"], depts: ["교무기획", "교육정보", "교육연구", "안전자치", "특수교육"] }, 
+    group2: { grades: ["4학년", "5학년", "6학년"], depts: ["문화체육", "학생생활", "과학환경"] }
   }
 };
 
@@ -334,19 +334,23 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   );
 }
 
-function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction, groups, onSelectGroup }) {
+function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction, groupNames, groupItems, onSelectGroup }) {
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-slate-500">{label}</span>
           {editAction}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {groups && groups.map((g, idx) => (
-            g.name.trim() && (
-              <button key={idx} onClick={() => onSelectGroup(g.items)} className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition">
-                {g.name} 선택
+        <div className="flex flex-wrap items-center gap-2">
+          {groupNames && groupNames.map((name, idx) => (
+            name.trim() && (
+              <button 
+                key={idx} 
+                onClick={() => onSelectGroup(idx)} 
+                className="rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition inline-flex items-center whitespace-nowrap"
+              >
+                {name} 선택
               </button>
             )
           ))}
@@ -424,7 +428,7 @@ function App() {
   const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
-  // 업무분장 그룹핑 상태 (학년 그룹만 관리)
+  // 업무분장 그룹핑 상태 (교감 명칭 변경 시 학년 및 담당부서 동시 연동)
   const [filterGroups, setFilterGroups] = useState(() => {
     try { 
       const saved = JSON.parse(localStorage.getItem("sp_filter_groups"));
@@ -753,15 +757,24 @@ function App() {
     setGroupModalStage("edit");
   };
 
-  const handleEditGroupName = (key, val) => {
-    setEditGroups(p => ({ ...p, names: { ...p.names, [key]: val } }));
+  const handleEditGroupName = (groupKey, val) => {
+    setEditGroups(p => ({ ...p, names: { ...p.names, [groupKey]: val } }));
   };
 
-  const handleEditGroupMapping = (key, item) => {
+  const handleEditGroupMapping = (groupKey, type, item) => {
     setEditGroups(p => {
-      const arr = p.mappings[key] || [];
-      const nextArr = arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
-      return { ...p, mappings: { ...p.mappings, [key]: nextArr } };
+      const currentList = p.mappings[groupKey][type] || [];
+      const nextList = currentList.includes(item) ? currentList.filter(x => x !== item) : [...currentList, item];
+      return {
+        ...p,
+        mappings: {
+          ...p.mappings,
+          [groupKey]: {
+            ...p.mappings[groupKey],
+            [type]: nextList
+          }
+        }
+      };
     });
   };
 
@@ -1427,6 +1440,21 @@ function App() {
       return { ...e, dept: mapped || "" };
     }));
 
+    const updatedFilterGroups = JSON.parse(JSON.stringify(filterGroups));
+    ['group1', 'group2'].forEach(gKey => {
+      if (updatedFilterGroups.mappings[gKey] && updatedFilterGroups.mappings[gKey].depts) {
+        updatedFilterGroups.mappings[gKey].depts = updatedFilterGroups.mappings[gKey].depts
+          .map(old => Object.prototype.hasOwnProperty.call(renameMap, old) ? renameMap[old] : old)
+          .filter(Boolean);
+      }
+    });
+
+    setFilterGroups(updatedFilterGroups);
+    localStorage.setItem("sp_filter_groups", JSON.stringify(updatedFilterGroups));
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'filter_groups_data', data: updatedFilterGroups }]);
+    }
+
     setSelectedDepts(new Set(dedupedNewDepts));
     setDepts(dedupedNewDepts);
     setDeptModalStage(null);
@@ -1558,7 +1586,7 @@ function App() {
           </div>
         </div>
 
-        {/* 필터 영역 (학년 상단에만 교감 소관 버튼 배치, 부서 영역은 완전 깔끔하게 분리) */}
+        {/* 필터 영역 (학년 상단에만 교감 소관 버튼 배치, 위쪽 여유 공간 확보) */}
         <div className="mb-4 space-y-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <FilterRow 
             label="학년" 
@@ -1567,11 +1595,12 @@ function App() {
             onToggle={(v) => toggleInSet(selectedGrades, setSelectedGrades, v)} 
             onAll={() => setSelectedGrades(new Set(GRADES))} 
             onNone={() => setSelectedGrades(new Set())} 
-            groups={[
-              { name: filterGroups.names.grade1, items: filterGroups.mappings.grade1 },
-              { name: filterGroups.names.grade2, items: filterGroups.mappings.grade2 }
-            ]}
-            onSelectGroup={(items) => setSelectedGrades(new Set(items))}
+            groupNames={[filterGroups.names.group1, filterGroups.names.group2]}
+            onSelectGroup={(idx) => {
+              const key = idx === 0 ? 'group1' : 'group2';
+              setSelectedGrades(new Set(filterGroups.mappings[key].grades || []));
+              setSelectedDepts(new Set(filterGroups.mappings[key].depts || []));
+            }}
           />
           <div className="border-t border-slate-100 pt-3.5">
             <FilterRow 
@@ -2285,7 +2314,7 @@ function App() {
           </Modal>
         )}
 
-        {/* 10. 필터 그룹 (업무 분장) 수정 모달 */}
+        {/* 10. 필터 그룹 (업무 분장) 수정 모달 (학년 및 담당 부서 통합 연동 관리) */}
         {groupModalStage === "password" && (
           <Modal title="필터 그룹 설정 인증" onClose={() => setGroupModalStage(null)}>
             <FieldLabel>마스터 비밀번호</FieldLabel>
@@ -2297,45 +2326,92 @@ function App() {
 
         {groupModalStage === "edit" && (
           <Modal title="필터 그룹 (업무 분장) 설정" onClose={() => setGroupModalStage(null)} wide>
-            <div className="max-h-[60vh] space-y-6 overflow-y-auto pr-1">
+            <div className="max-h-[65vh] space-y-6 overflow-y-auto pr-1">
               
-              {/* 학년 그룹 설정 */}
-              <div>
-                <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-1.5"><span className="w-1.5 h-4 bg-violet-500 rounded-full"></span>학년 필터 그룹 설정</h4>
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-violet-600">그룹 이름 수정</span>
-                      <span className="text-[10px] text-slate-400">아래 버튼을 눌러 소속 학년을 지정하세요</span>
-                    </div>
-                    <input type="text" value={editGroups.names.grade1} onChange={(e) => handleEditGroupName('grade1', e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-violet-700 outline-none focus:border-violet-400 shadow-2xs" placeholder="그룹 이름 입력" />
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {GRADES.map(item => {
-                        const isActive = editGroups.mappings.grade1.includes(item);
-                        return (
-                          <button key={item} onClick={() => handleEditGroupMapping('grade1', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
-                            {isActive && "✓"} {item}
-                          </button>
-                        );
-                      })}
-                    </div>
+              {/* 그룹 1 (예: 교감 A 소관) 설정 */}
+              <div className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-violet-700">1번 그룹 명칭 (학년/부서 공통 적용)</span>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold text-violet-600">그룹 이름 수정</span>
-                      <span className="text-[10px] text-slate-400">아래 버튼을 눌러 소속 학년을 지정하세요</span>
-                    </div>
-                    <input type="text" value={editGroups.names.grade2} onChange={(e) => handleEditGroupName('grade2', e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-bold text-violet-700 outline-none focus:border-violet-400 shadow-2xs" placeholder="그룹 이름 입력" />
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {GRADES.map(item => {
-                        const isActive = editGroups.mappings.grade2.includes(item);
-                        return (
-                          <button key={item} onClick={() => handleEditGroupMapping('grade2', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
-                            {isActive && "✓"} {item}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <input 
+                    type="text" 
+                    value={editGroups.names.group1} 
+                    onChange={(e) => handleEditGroupName('group1', e.target.value)} 
+                    className="w-full rounded-xl border border-violet-200 bg-white px-3.5 py-2 text-sm font-bold text-violet-800 outline-none focus:border-violet-400 shadow-2xs" 
+                    placeholder="예: 교감(A) 소관" 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold text-slate-600">소속 학년 지정</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {GRADES.map(item => {
+                      const isActive = editGroups.mappings.group1.grades.includes(item);
+                      return (
+                        <button key={item} onClick={() => handleEditGroupMapping('group1', 'grades', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
+                          {isActive && "✓"} {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1 border-t border-violet-100">
+                  <p className="text-[11px] font-bold text-slate-600">소속 담당 부서 지정</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {depts.map(item => {
+                      const isActive = editGroups.mappings.group1.depts.includes(item);
+                      return (
+                        <button key={item} onClick={() => handleEditGroupMapping('group1', 'depts', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
+                          {isActive && "✓"} {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 그룹 2 (예: 교감 B 소관) 설정 */}
+              <div className="rounded-2xl border border-sky-100 bg-sky-50/40 p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-sky-700">2번 그룹 명칭 (학년/부서 공통 적용)</span>
+                  </div>
+                  <input 
+                    type="text" 
+                    value={editGroups.names.group2} 
+                    onChange={(e) => handleEditGroupName('group2', e.target.value)} 
+                    className="w-full rounded-xl border border-sky-200 bg-white px-3.5 py-2 text-sm font-bold text-sky-800 outline-none focus:border-sky-400 shadow-2xs" 
+                    placeholder="예: 교감(B) 소관" 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold text-slate-600">소속 학년 지정</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {GRADES.map(item => {
+                      const isActive = editGroups.mappings.group2.grades.includes(item);
+                      return (
+                        <button key={item} onClick={() => handleEditGroupMapping('group2', 'grades', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
+                          {isActive && "✓"} {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-1 border-t border-sky-100">
+                  <p className="text-[11px] font-bold text-slate-600">소속 담당 부서 지정</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {depts.map(item => {
+                      const isActive = editGroups.mappings.group2.depts.includes(item);
+                      return (
+                        <button key={item} onClick={() => handleEditGroupMapping('group2', 'depts', item)} className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${isActive ? getTagStyle(item) : "border-slate-300 bg-white text-slate-400 hover:text-slate-600"}`}>
+                          {isActive && "✓"} {item}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2343,8 +2419,7 @@ function App() {
             </div>
             
             <p className="mt-4 text-[11px] text-slate-400 leading-relaxed">
-              * 특정 그룹에 소속되지 않는 학년은 선택하지 않고 비워두시면 됩니다.<br/>
-              * 설정한 그룹 버튼을 누르면 해당 그룹에 속한 학년들만 한 번에 필터링됩니다.
+              * 설정한 그룹 버튼을 누르면 해당 그룹에 속한 학년과 담당 부서가 한 번에 싹 필터링됩니다!
             </p>
             <div className="mt-3 flex items-center gap-2">
               <button onClick={() => setGroupModalStage(null)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
