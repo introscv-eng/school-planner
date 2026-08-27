@@ -288,9 +288,9 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
               <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
               <span className="pt-0.5 text-[13px] leading-snug text-slate-600 font-medium">{ev.content}</span>
               {ev.manager && (
-                <span className="ml-auto shrink-0 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                <Badge className={`ml-auto shrink-0 ${getTagStyle(ev.manager)}`}>
                   {ev.manager}
-                </span>
+                </Badge>
               )}
             </button>
           ))
@@ -666,66 +666,9 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 열 너비(Width) 70 설정 적용] ====================
+  // ==================== [출력/저장 통합 및 내용 열 너비 70 지정] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
-    let csvRows = [];
-
-    // 엑셀(CSV) 파일에 <colgroup> 또는 XML 태그 방식을 활용하여 내용 열 너비 70 지정
-    // 표준 CSV 파일에서 열 너비는 오직 엑셀 열 너비 지정용 태그나 메타 태그 혹은 HTML 표 서식으로 강제할 수 있습니다.
-    // 여기서는 엑셀에서 바로 너비 70으로 인식할 수 있도록 XML 기반의 스타일 태그와 HTML 표 형태로 렌더링하도록 래핑합니다.
-    
-    if (isMonth) {
-      csvRows.push([`인천경연초등학교 ${monthLabel} 학사 일정표`]);
-      csvRows.push([]);
-      csvRows.push(["일자", "요일", "내용", "담당자"]);
-      monthDays.forEach(d => {
-        const dayNum = d.getDate();
-        const dowStr = WEEKDAY_KOR[d.getDay()];
-        const dStr = ymd(d);
-        const hol = getHolidayName(dStr, customHolidays) || "";
-        const evList = sortEvents(eventsByDate[dStr] || []);
-        
-        if (evList.length === 0) {
-          csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
-        } else {
-          const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
-          const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
-          csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
-        }
-      });
-    } else {
-      csvRows.push([`인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`]);
-      csvRows.push([]);
-      csvRows.push(["[1. 주간 학사 및 주요 행사]"]);
-      csvRows.push(["일자", "요일", "내용", "담당자"]);
-      weekDates.forEach(d => {
-        const dayNum = d.getDate();
-        const dowStr = WEEKDAY_KOR[d.getDay()];
-        const dStr = ymd(d);
-        const hol = getHolidayName(dStr, customHolidays) || "";
-        const evList = sortEvents(eventsByDate[dStr] || []);
-        
-        if (evList.length === 0) {
-          csvRows.push([dayNum, dowStr, hol ? `[휴일] ${hol}` : "-", "-"]);
-        } else {
-          const contentCombined = evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
-          const managerCombined = evList.map(ev => ev.manager || "-").join("\n");
-          csvRows.push([dayNum, dowStr, contentCombined, managerCombined]);
-        }
-      });
-      csvRows.push([]);
-      csvRows.push(["[2. 관리자 주간 근무 현황]"]);
-      csvRows.push(["직책", "근무 및 출장 내용"]);
-      adminRoles.forEach(r => { csvRows.push([r, currentWeekTexts[r] || "특이사항 없음"]); });
-    }
-
-    const csvString = csvRows.map(row => row.map(cell => {
-      const cStr = String(cell ?? "");
-      return (cStr.includes(",") || cStr.includes('"') || cStr.includes("\n")) ? `"${cStr.replace(/"/g, '""')}"` : cStr;
-    }).join(",")).join("\r\n");
-
-    // 엑셀에서 열 너비 70(약 500픽셀)이 강제로 적용되도록 HTML XML 형식의 .xls 파일로 다운로드 처리
     let htmlTableContent = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
       <head>
@@ -736,7 +679,7 @@ function App() {
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
           .col-date { width: 50px; text-align: center; }
           .col-dow { width: 60px; text-align: center; }
-          .col-content { width: 480px; white-space: pre-wrap; text-align: left; } /* 너비 70 대응 크기 */
+          .col-content { width: 480px; white-space: pre-wrap; text-align: left; } /* 내용 열 너비 70 대응 크기 */
           .col-manager { width: 110px; text-align: center; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
