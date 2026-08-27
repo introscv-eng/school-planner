@@ -347,7 +347,7 @@ function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction
         <div className="flex flex-wrap items-center gap-1.5">
           {groups && groups.map((g, idx) => (
             g.name.trim() && (
-              <button key={idx} onClick={() => onSelectGroup(g.items)} className="rounded-lg border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition">
+              <button key={idx} onClick={() => onSelectGroup(g.items)} className="rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition">
                 {g.name} 선택
               </button>
             )
@@ -426,9 +426,13 @@ function App() {
   const [isNoticeEditing, setIsNoticeEditing] = useState(false);
   const [noticeInput, setNoticeInput] = useState(() => notices[currentPeriodKey] || "");
 
-  // 업무분장 그룹핑 상태 (기본값으로 기본 교감 A/B 소관 매핑 탑재)
+  // 업무분장 그룹핑 상태 (기본값 장착)
   const [filterGroups, setFilterGroups] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sp_filter_groups")) || INITIAL_FILTER_GROUPS; } catch { return INITIAL_FILTER_GROUPS; }
+    try { 
+      const saved = JSON.parse(localStorage.getItem("sp_filter_groups"));
+      if (saved && saved.names) return saved;
+    } catch {}
+    return INITIAL_FILTER_GROUPS;
   });
   const [groupModalStage, setGroupModalStage] = useState(null);
   const [groupPwInput, setGroupPwInput] = useState("");
@@ -553,8 +557,10 @@ function App() {
             setNotices(item.data || {});
             localStorage.setItem("sp_notices", JSON.stringify(item.data || {}));
           } else if (item.week_key === 'filter_groups_data') {
-            setFilterGroups(item.data || INITIAL_FILTER_GROUPS);
-            localStorage.setItem("sp_filter_groups", JSON.stringify(item.data || INITIAL_FILTER_GROUPS));
+            if (item.data && item.data.names) {
+              setFilterGroups(item.data);
+              localStorage.setItem("sp_filter_groups", JSON.stringify(item.data));
+            }
           } else {
             map[item.week_key] = item.data;
           }
