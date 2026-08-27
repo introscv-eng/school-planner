@@ -115,6 +115,19 @@ const PALETTE = [
   "bg-slate-200 text-slate-700 border-slate-300"
 ];
 
+const TEXT_COLOR_PALETTE = [
+  "text-indigo-600 font-semibold",
+  "text-sky-600 font-semibold",
+  "text-emerald-600 font-semibold",
+  "text-amber-600 font-semibold",
+  "text-rose-600 font-semibold",
+  "text-violet-600 font-semibold",
+  "text-teal-600 font-semibold",
+  "text-fuchsia-600 font-semibold",
+  "text-cyan-600 font-semibold",
+  "text-orange-600 font-semibold"
+];
+
 function hashStr(s) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -124,6 +137,11 @@ function hashStr(s) {
 function getTagStyle(label) {
   if (!label) return "bg-slate-100 text-slate-400 border-slate-200";
   return PALETTE[hashStr(label) % PALETTE.length];
+}
+
+function getManagerTextStyle(name) {
+  if (!name) return "text-slate-500 font-medium";
+  return TEXT_COLOR_PALETTE[hashStr(name) % TEXT_COLOR_PALETTE.length];
 }
 
 function tagLabel(ev) {
@@ -288,7 +306,7 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
               <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
               <span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
               {ev.manager && (
-                <span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
+                <span className={`ml-auto shrink-0 text-xs font-bold pl-2 ${getManagerTextStyle(ev.manager)}`}>
                   {ev.manager}
                 </span>
               )}
@@ -666,9 +684,50 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 열 너비 70 대응] ====================
+  // ==================== [출력/저장 통합 및 비고란(교장/교감님) 추가 최적화] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
+    
+    // 해당 날짜의 주간 시작일(월요일) 키를 구해서 관리자 근무 현황을 가져오는 헬퍼 함수
+    const getAdminRemarkForDate = (dateObj) => {
+      const monDate = startOfWeekMon(dateObj);
+      const wKey = ymd(monDate);
+      const weekAdminData = adminWorkStatus[wKey] || {};
+      
+      const remarks = [];
+      adminRoles.forEach(role => {
+        const text = weekAdminData[role];
+        if (text && text !== "특이사항 없음") {
+          // 직함에 '님' 붙이기 (교장 -> 교장님, 교감(교무) -> 교감(교무)님 등)
+          let formalRole = role;
+          if (role.includes("교장") || role.includes("교감")) {
+            formalRole = role.endsWith("님") ? role : `${role}님`;
+          }
+          
+          // 해당 날짜(예: "1일", "3(목)" 등)가 포함된 줄만 추출하거나 전체 출력
+          const dayNumStr = String(dateObj.getDate());
+          const lines = text.split(/\r\n|\n/);
+          const matchedLines = lines.filter(line => line.includes(dayNumStr) || line.includes(`${dayNumStr}일`));
+          
+          if (matchedLines.length > 0) {
+            matchedLines.forEach(ml => {
+              // 날짜 접두사(예: "1(화) ")를 제거하고 내용만 깔끔하게 정돈
+              const cleanLine = ml.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+              remarks.push(`${cleanLine} ${formalRole}`);
+            });
+          } else {
+            // 날짜가 명시되지 않았거나 주간 전체 요약인 경우 그대로 반영
+            // (사용자 요청하신 첨부파일 비고란 형식: "13:00~16:30 교장님", "12:30~16:30 이교감님")
+            lines.forEach(l => {
+              const cleanLine = l.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+              if (cleanLine) remarks.push(`${cleanLine} ${formalRole}`);
+            });
+          }
+        }
+      });
+      return remarks.join("\n");
+    };
+
     let htmlTableContent = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
       <head>
@@ -677,21 +736,23 @@ function App() {
           table { border-collapse: collapse; width: 100%; }
           th, td { border: .5pt solid #999; padding: 6px; font-family: 'Malgun Gothic', sans-serif; font-size: 11pt; vertical-align: middle; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-          .col-date { width: 50px; text-align: center; }
-          .col-dow { width: 60px; text-align: center; }
-          .col-content { width: 480px; white-space: pre-wrap; text-align: left; }
-          .col-manager { width: 110px; text-align: center; }
+          .col-date { width: 45px; text-align: center; font-size: 10pt; }
+          .col-dow { width: 50px; text-align: center; font-size: 10pt; }
+          .col-content { width: 420px; white-space: pre-wrap; text-align: left; }
+          .col-manager { width: 100px; text-align: center; font-size: 10pt; }
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 9pt; color: #475569; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
       <body>
         <table>
-          <tr><td colspan="4" class="title">${isMonth ? `인천경연초등학교 ${monthLabel} 학사 일정표` : `인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`}</td></tr>
+          <tr><td colspan="5" class="title">${isMonth ? `인천경연초등학교 ${monthLabel} 학사 일정표` : `인천경연초등학교 주간 업무 및 근무 현황 (${weekLabel})`}</td></tr>
           <tr>
             <th class="col-date">일자</th>
             <th class="col-dow">요일</th>
             <th class="col-content">내용</th>
             <th class="col-manager">담당자</th>
+            <th class="col-remark">비고</th>
           </tr>
     `;
 
@@ -705,6 +766,7 @@ function App() {
         
         const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+        const remarkText = getAdminRemarkForDate(d);
 
         htmlTableContent += `
           <tr>
@@ -712,6 +774,7 @@ function App() {
             <td class="col-dow">${dowStr}</td>
             <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
             <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkText.replace(/\n/g, '<br>')}</td>
           </tr>
         `;
       });
@@ -725,6 +788,7 @@ function App() {
         
         const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
+        const remarkText = getAdminRemarkForDate(d);
 
         htmlTableContent += `
           <tr>
@@ -732,6 +796,7 @@ function App() {
             <td class="col-dow">${dowStr}</td>
             <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
             <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkText.replace(/\n/g, '<br>')}</td>
           </tr>
         `;
       });
