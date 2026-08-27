@@ -334,7 +334,7 @@ function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customH
   );
 }
 
-function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction }) {
+function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction, groupNames, onSelectGroup }) {
   return (
     <div>
       <div className="mb-2.5 flex items-center justify-between">
@@ -342,9 +342,22 @@ function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction
           <span className="text-xs font-bold text-slate-500">{label}</span>
           {editAction}
         </div>
-        <div className="flex gap-1 border-l border-slate-200 pl-2">
-          <button onClick={onAll} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
-          <button onClick={onNone} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제</button>
+        <div className="flex flex-wrap items-center gap-2">
+          {groupNames && groupNames.map((name, idx) => (
+            name.trim() && (
+              <button 
+                key={idx} 
+                onClick={() => onSelectGroup(idx)} 
+                className="rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 hover:border-violet-300 shadow-2xs transition inline-flex items-center whitespace-nowrap"
+              >
+                {name} 선택
+              </button>
+            )
+          ))}
+          <div className="ml-1 flex gap-1 border-l border-slate-200 pl-2">
+            <button onClick={onAll} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
+            <button onClick={onNone} className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제</button>
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -1575,7 +1588,7 @@ function App() {
           </div>
         </div>
 
-        {/* 필터 영역 (학년 상단에만 통합 교감 소관 1쌍 배치, 위쪽 넉넉한 여유 공간 확보) */}
+        {/* 필터 영역 (학년 상단에만 교감 소관 1쌍 배치, 부서 영역은 완전 깔끔하게 분리) */}
         <div className="mb-4 space-y-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <FilterRow 
             label="학년" 
@@ -2303,7 +2316,7 @@ function App() {
           </Modal>
         )}
 
-        {/* 10. 필터 그룹 (업무 분장) 수정 모달 (학년 & 담당부서 통합 관리) */}
+        {/* 10. 필터 그룹 (업무 분장) 수정 모달 */}
         {groupModalStage === "password" && (
           <Modal title="필터 그룹 설정 인증" onClose={() => setGroupModalStage(null)}>
             <FieldLabel>마스터 비밀번호</FieldLabel>
