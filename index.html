@@ -1146,6 +1146,10 @@ function App() {
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
   };
 
+  const handleDownloadExcel = () => {
+    handlePrint();
+  };
+
   const toggleInSet = (set, setter, value) => {
     const next = new Set(set);
     if (next.has(value)) next.delete(value);
@@ -1508,20 +1512,20 @@ function App() {
           </div>
         </div>
 
-        {/* 상단 우측 버튼군 */}
-        <div className="mb-2 flex flex-wrap justify-end gap-1.5">
+        {/* 상단 우측 메뉴 버튼군 (한 줄 정렬 및 '필터 설정'으로 명칭 단축) */}
+        <div className="mb-2 flex flex-nowrap items-center justify-end gap-1.5 overflow-x-auto pb-1">
           <button
             onClick={openGroupEdit}
-            className="flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50/70 px-3 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-violet-300 bg-violet-50/70 px-3 py-1 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-2xs"
           >
             <SettingsIcon size={12} className="text-violet-500" />
-            필터 그룹(업무분장) 설정
+            필터 설정
           </button>
           <a
             href="https://docs.google.com/spreadsheets/d/1n_UUF3b2IOIZcxjGCIvBKonkiYe5z2Zcs2ZyB_VZBiY/edit#gid=504043466"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-2xs"
             title="경연 현황 구글 시트 바로가기"
           >
             <span>경연 현황</span>
@@ -1531,7 +1535,7 @@ function App() {
             href="https://docs.google.com/spreadsheets/d/1OnvmogcwUklmh8LzwAdQA5YQBHpZNFE6GyO1o-gD0mQ/edit#gid=1536539593"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50/70 px-3 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-sky-200 bg-sky-50/70 px-3 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition shadow-2xs"
             title="에듀브릿지 예약 구글 시트 바로가기"
           >
             <span>에듀브릿지 예약</span>
@@ -1539,21 +1543,21 @@ function App() {
           </a>
           <button
             onClick={() => { setUploadModalOpen(true); setUploadStatus(""); }}
-            className="flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-2xs"
           >
             <UploadCloudIcon size={13} className="text-indigo-500" />
             일정 엑셀 업로드
           </button>
           <button
             onClick={() => { setHolidayCalendarDate(new Date()); setSelectedHolidayDate(ymd(new Date())); setHolidayNameInput("재량휴업일"); setHolidayModalOpen(true); }}
-            className="flex items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 transition shadow-2xs"
           >
             <span>🏖️</span>
             재량휴업일 관리
           </button>
           <button
             onClick={openMasterPwModal}
-            className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-violet-600 hover:bg-rose-50 transition shadow-2xs"
+            className="flex items-center gap-1 shrink-0 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-violet-600 hover:bg-rose-50 transition shadow-2xs"
           >
             <ShieldCheckIcon size={13} className="text-violet-500" />
             마스터 PW 변경
