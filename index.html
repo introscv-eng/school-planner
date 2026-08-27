@@ -401,7 +401,7 @@ function App() {
   const [newHolDate, setNewHolDate] = useState(ymd(today));
   const [newHolName, setNewHolName] = useState("재량휴업일");
 
-  // 공지 및 협의사항 상태 (월별 키 또는 주간별 키 관리)
+  // 공지 및 협의사항 상태 관리
   const [notices, setNotices] = useState(() => {
     try { return JSON.parse(localStorage.getItem("sp_notices")) || {}; } catch { return {}; }
   });
@@ -822,7 +822,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장: 공지사항 포함 최종 엑셀 서식] ====================
+  // ==================== [출력/저장: 1일 1행 + 합리적 관리자 근무 정리 + 공지사항 맨 아래 삽입] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
@@ -1032,7 +1032,7 @@ function App() {
       `;
     });
 
-    // 공지 및 협의사항 행 추가 (작성된 내용이 있을 때만 표 맨 아래에 삽입)
+    // 공지사항 및 협의사항 행 추가 (내용이 있는 경우만)
     if (currentNoticeText) {
       htmlTableContent += `
           <tr>
@@ -2114,7 +2114,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(getElementById('root') || document.getElementById('root')).render(<App />);
+document.getElementById('root') && ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
