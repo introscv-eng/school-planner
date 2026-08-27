@@ -6,10 +6,8 @@
 <title>인천경연초등학교 학사·근무 현황 플래너</title>
 <!-- Tailwind CSS & React & Supabase CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"
-crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
-crossorigin></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -23,798 +21,771 @@ body { font-family: 'Inter', sans-serif; }
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-violet-100 selection:text-violet-700">
 <div id="root"></div>
+
 <script type="text/babel">
 const RAW_SUPABASE_URL = "https://ozflxmatleyttxwfrckb.supabase.co/rest/v1/";
 const SUPABASE_URL = RAW_SUPABASE_URL.replace(/\/rest\/v1\/?$/, "");
-const DEFAULT_SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Zmx4bW F0bGV5dHR4d2ZyY2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDY5ODgsImV4cCI6MjE wMzIyMjk4OH0.S4hWR5krOBKlQNhGqe5phNxvyoy8E1H32WoODrC_5l0";
-const { useState, useMemo, useEffect, useCallback, useRef } = React;
-const FIXED_HOLIDAYS = {
-"01-01": "신정", "03-01": "삼일절", "05-05": "어린이날", "06-06": "현충일",
-"08-15": "광복절", "10-03": "개천절", "10-09": "한글날", "12-25": "성탄절",
-"2025-01-28": "설날 연휴", "2025-01-29": "설날", "2025-01-30": "설날 연휴",
+const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96Zmx4bWF0bGV5dHR4d2ZyY2tiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NDY5ODgsImV4cCI6MjEwMzIyMjk4OH0.S4hWR5krOBKlQNhGqe5phNxvyoy8E1H32WoODrC_5l0";
 
-"2025-03-03": "대체공휴일(삼일절)", "2025-05-06": "대체공휴일",
-"2025-10-05": "추석 연휴", "2025-10-06": "추석", "2025-10-07": "추석 연휴",
-"2025-10-08": "대체공휴일",
-"2026-02-16": "설날 연휴", "2026-02-17": "설날", "2026-02-18": "설날 연휴",
-"2026-03-02": "대체공휴일(삼일절)", "2026-05-24": "부처님오신날", "2026-05-25": "대체공 휴일",
-"2026-08-17": "대체공휴일(광복절)", "2026-09-24": "추석 연휴", "2026-09-25": "추석",
-"2026-09-26": "추석 연휴", "2026-10-05": "대체공휴일(개천절)",
-"2027-02-06": "설날 연휴", "2027-02-07": "설날", "2027-02-08": "설날 연휴",
-"2027-02-09": "대체공휴일",
-"2027-05-13": "부처님오신날", "2027-08-16": "대체공휴일(광복절)",
-"2027-09-14": "추석 연휴", "2027-09-15": "추석", "2027-09-16": "추석 연휴",
-"2027-10-04": "대체공휴일(개천절)", "2027-10-11": "대체공휴일(한글날)"
+const { useState, useMemo, useEffect, useCallback, useRef } = React;
+
+const FIXED_HOLIDAYS = {
+  "01-01": "신정", "03-01": "삼일절", "05-05": "어린이날", "06-06": "현충일",
+  "08-15": "광복절", "10-03": "개천절", "10-09": "한글날", "12-25": "성탄절",
+  "2025-01-28": "설날 연휴", "2025-01-29": "설날", "2025-01-30": "설날 연휴",
+  "2025-03-03": "대체공휴일(삼일절)", "2025-05-06": "대체공휴일",
+  "2025-10-05": "추석 연휴", "2025-10-06": "추석", "2025-10-07": "추석 연휴", "2025-10-08": "대체공휴일",
+  "2026-02-16": "설날 연휴", "2026-02-17": "설날", "2026-02-18": "설날 연휴",
+  "2026-03-02": "대체공휴일(삼일절)", "2026-05-24": "부처님오신날", "2026-05-25": "대체공휴일",
+  "2026-08-17": "대체공휴일(광복절)", "2026-09-24": "추석 연휴", "2026-09-25": "추석",
+  "2026-09-26": "추석 연휴", "2026-10-05": "대체공휴일(개천절)",
+  "2027-02-06": "설날 연휴", "2027-02-07": "설날", "2027-02-08": "설날 연휴", "2027-02-09": "대체공휴일",
+  "2027-05-13": "부처님오신날", "2027-08-16": "대체공휴일(광복절)",
+  "2027-09-14": "추석 연휴", "2027-09-15": "추석", "2027-09-16": "추석 연휴",
+  "2027-10-04": "대체공휴일(개천절)", "2027-10-11": "대체공휴일(한글날)"
 };
+
 const ChevronLeft = ({ size = 18, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
 );
 const ChevronRight = ({ size = 18, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
 );
 const XIcon = ({ size = 16, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
 );
 const PlusIcon = ({ size = 14, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
 );
 const Trash2Icon = ({ size = 15, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10"
-x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
 );
 const CopyIcon = ({ size = 15, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path
-d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
 );
 const PrinterIcon = ({ size = 14, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
 );
 const DownloadIcon = ({ size = 14, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12"
-y1="15" x2="12" y2="3"></line></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
 );
 const UploadCloudIcon = ({ size = 14, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
 );
 const ExternalLinkIcon = ({ size = 13, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21"
-y2="3"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
 );
 const LockIcon = ({ size = 12, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path
-d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
 );
 const ShieldCheckIcon = ({ size = 14, className = "" }) => (
-
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
 );
 const CalendarDaysIcon = ({ size = 15, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line
-x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21"
-y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
 );
 const ClipboardListIcon = ({ size = 15, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path
-d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path
-d="M8 16h.01"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
 );
 const PencilIcon = ({ size = 11, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 );
 const KeyIcon = ({ size = 14, className = "" }) => (
-<svg width={size} height={size} className={className} viewBox="0 0 24 24"
-fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3"/></svg>
+  <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3"/></svg>
 );
+
 const GRADES = ["유치원", "1학년", "2학년", "3학년", "4학년", "5학년", "6학년"];
-const INITIAL_DEPTS = ["교무기획", "교육정보", "교육연구", "안전자치", "특수교육", "문화체 육", "학생생활", "과학환경", "행정실", "늘봄지원"];
+const INITIAL_DEPTS = ["교무기획", "교육정보", "교육연구", "안전자치", "특수교육", "문화체육", "학생생활", "과학환경", "행정실", "늘봄지원"];
 const INITIAL_ADMIN_ROLES = ["교장", "교감(교무)", "교감(생활)", "행정실장"];
 const WEEKDAY_KOR = ["일", "월", "화", "수", "목", "금", "토"];
 const MASTER_PASSWORD_DEFAULT = "1234";
 
 const PALETTE = [
-"bg-indigo-100 text-indigo-700 border-indigo-200",
-"bg-sky-100 text-sky-700 border-sky-200",
-"bg-emerald-100 text-emerald-700 border-emerald-200",
-"bg-amber-100 text-amber-700 border-amber-200",
-"bg-rose-100 text-rose-700 border-rose-200",
-"bg-violet-100 text-violet-700 border-violet-200",
-"bg-teal-100 text-teal-700 border-teal-200",
-"bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
-"bg-lime-100 text-lime-700 border-lime-200",
-"bg-cyan-100 text-cyan-700 border-cyan-200",
-"bg-orange-100 text-orange-700 border-orange-200",
-"bg-slate-200 text-slate-700 border-slate-300"
+  "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "bg-sky-100 text-sky-700 border-sky-200",
+  "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "bg-amber-100 text-amber-700 border-amber-200",
+  "bg-rose-100 text-rose-700 border-rose-200",
+  "bg-violet-100 text-violet-700 border-violet-200",
+  "bg-teal-100 text-teal-700 border-teal-200",
+  "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
+  "bg-lime-100 text-lime-700 border-lime-200",
+  "bg-cyan-100 text-cyan-700 border-cyan-200",
+  "bg-orange-100 text-orange-700 border-orange-200",
+  "bg-slate-200 text-slate-700 border-slate-300"
 ];
+
 function hashStr(s) {
-let h = 0;
-for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-return h;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
+
 function getTagStyle(label) {
-if (! label) return "bg-slate-100 text-slate-400 border-slate-200";
-return PALETTE[hashStr(label) % PALETTE.length];
+  if (!label) return "bg-slate-100 text-slate-400 border-slate-200";
+  return PALETTE[hashStr(label) % PALETTE.length];
 }
+
 function tagLabel(ev) {
-if (ev.dept && ev.grade) return `${ev.dept} ${ev.grade}`;
-return ev.dept || ev.grade || "전체";
+  if (ev.dept && ev.grade) return `${ev.dept} ${ev.grade}`;
+  return ev.dept || ev.grade || "전체";
 }
+
 const pad2 = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const sameDay = (a, b) => ymd(a) === ymd(b);
-const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return
-r; };
-const addMonths = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n);
-return r; };
-const startOfWeekMon = (d) => { const r = new Date(d); const day = r.getDay();
-const diff = day === 0 ? -6 : 1 - day; return addDays(r, diff); };
+const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+const addMonths = (d, n) => { const r = new Date(d); r.setMonth(r.getMonth() + n); return r; };
+const startOfWeekMon = (d) => { const r = new Date(d); const day = r.getDay(); const diff = day === 0 ? -6 : 1 - day; return addDays(r, diff); };
 
 function getMonthDays(viewDate) {
-const year = viewDate.getFullYear();
-const month = viewDate.getMonth();
-const lastDate = new Date(year, month + 1, 0).getDate();
-const days = [];
-for (let d = 1; d <= lastDate; d++) days.push(new Date(year, month, d));
-return days;
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const lastDate = new Date(year, month + 1, 0).getDate();
+  const days = [];
+  for (let d = 1; d <= lastDate; d++) days.push(new Date(year, month, d));
+  return days;
 }
+
 function getWeekdays(anchor) {
-const mon = startOfWeekMon(anchor);
-return [0, 1, 2, 3, 4].map((i) => addDays(mon, i));
+  const mon = startOfWeekMon(anchor);
+  return [0, 1, 2, 3, 4].map((i) => addDays(mon, i));
 }
+
 function Badge({ className = "", children }) {
-return (
-<span className={`inline-flex shrink-0 items-center rounded-full border px-2
-py-0.5 text-[11px] font-bold leading-none ${className}`}>
-{children}
-</span>
-);
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none ${className}`}>
+      {children}
+    </span>
+  );
 }
+
 function Modal({ title, onClose, children, wide = false }) {
-return (
-<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto">
-<div className={`w-full ${wide ? "max-w-lg" : "max-w-sm"} rounded-2xl
-bg-white p-6 shadow-2xl ring-1 ring-black/5 relative my-8`}>
-<div className="mb-4 flex items-center justify-between">
-<h3 className="text-base font-bold text-slate-800">{title}</h3>
-<button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-<XIcon size={18} />
-</button>
-</div>
-{children}
-</div>
-</div>
-);
-
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm overflow-y-auto">
+      <div className={`w-full ${wide ? "max-w-lg" : "max-w-sm"} rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 relative my-8`}>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-bold text-slate-800">{title}</h3>
+          <button onClick={onClose} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <XIcon size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }
+
 function FieldLabel({ children }) {
-return <label className="mb-1 block text-xs font-semibold text-slate-500">{children}</label>;
+  return <label className="mb-1 block text-xs font-semibold text-slate-500">{children}</label>;
 }
-const inputCls = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100 transition";
-function getHolidayName(dateStr, customHolidays) {
-if (customHolidays && customHolidays[dateStr]) return customHolidays[dateStr];
-if (FIXED_HOLIDAYS[dateStr]) return FIXED_HOLIDAYS[dateStr];
-const mmdd = dateStr.slice(5);
-if (FIXED_HOLIDAYS[mmdd]) return FIXED_HOLIDAYS[mmdd];
-return null;
-}
-function parseCSV(text) {
-const lines = text.split(/\r\n|\n/);
-const result = [];
-for (let i = 0; i < lines.length; i++) {
-const line = lines[i].trim();
-if (! line) continue;
-const row = [];
-let insideQuotes = false;
-let entry = '';
-for (let j = 0; j < line.length; j++) {
-const char = line[j];
-if (char === '"' || char === "'") {
-insideQuotes = ! insideQuotes;
-} else if (char === ',' && ! insideQuotes) {
-row.push(entry.trim());
-entry = '';
-} else {
-entry += char;
-}
-}
-row.push(entry.trim());
-result.push(row);
 
+const inputCls = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100 transition";
+
+function getHolidayName(dateStr, customHolidays) {
+  if (customHolidays && customHolidays[dateStr]) return customHolidays[dateStr];
+  if (FIXED_HOLIDAYS[dateStr]) return FIXED_HOLIDAYS[dateStr];
+  const mmdd = dateStr.slice(5);
+  if (FIXED_HOLIDAYS[mmdd]) return FIXED_HOLIDAYS[mmdd];
+  return null;
 }
-return result;
+
+function parseCSV(text) {
+  const lines = text.split(/\r\n|\n/);
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const row = [];
+    let insideQuotes = false;
+    let entry = '';
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      if (char === '"' || char === "'") {
+        insideQuotes = !insideQuotes;
+      } else if (char === ',' && !insideQuotes) {
+        row.push(entry.trim());
+        entry = '';
+      } else {
+        entry += char;
+      }
+    }
+    row.push(entry.trim());
+    result.push(row);
+  }
+  return result;
 }
+
 // 정렬 순서: 0순위 전체행사 -> 1순위 부서명 가나다순 -> 2순위 학년 순서 -> 동순위 행사명 가나다순
 function sortEvents(events) {
-const gradeOrder = GRADES;
-return [...events].sort((a, b) => {
-const isAAll = ! a.dept && ! a.grade;
-const isBAll = ! b.dept && ! b.grade;
-if (isAAll && ! isBAll) return -1;
-if (! isAAll && isBAll) return 1;
-if (isAAll && isBAll) {
-return (a.content || "").localeCompare(b.content || "", "ko");
-}
-const hasADept = !! a.dept;
-const hasBDept = !! b.dept;
-if (hasADept && ! hasBDept) return -1;
-if (! hasADept && hasBDept) return 1;
-if (hasADept && hasBDept) {
-const deptCompare = (a.dept || "").localeCompare(b.dept || "", "ko");
-if (deptCompare !== 0) return deptCompare;
-return (a.content || "").localeCompare(b.content || "", "ko");
-}
-const gradeIdxA = gradeOrder.indexOf(a.grade);
-const gradeIdxB = gradeOrder.indexOf(b.grade);
-const safeIdxA = gradeIdxA !== -1 ? gradeIdxA : 999;
-const safeIdxB = gradeIdxB !== -1 ? gradeIdxB : 999;
-if (safeIdxA !== safeIdxB) {
-return safeIdxA - safeIdxB;
-}
-return (a.content || "").localeCompare(b.content || "", "ko");
-});
+  const gradeOrder = GRADES;
+  return [...events].sort((a, b) => {
+    const isAAll = !a.dept && !a.grade;
+    const isBAll = !b.dept && !b.grade;
 
-}
-function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent,
-customHolidays, selectedEventIds, onToggleSelectEvent, onToggleSelectDate,
-isDateSelected }) {
-const dateStr = ymd(date);
-const dow = date.getDay();
-const isToday = sameDay(date, today);
-const holidayName = getHolidayName(dateStr, customHolidays);
-const isHoliday = dow === 0 || !! holidayName;
-const rowBg = isToday ? "bg-emerald-50/70" : isHoliday ? "bg-rose-50/40" : dow
-=== 6 ? "bg-blue-50/30" : "bg-white";
-const dateColor = isToday ? "text-emerald-600" : isHoliday ? "text-rose-500 font-black" : dow === 6 ? "text-blue-400" : "text-slate-500";
-const sortedEvents = sortEvents(events);
-return (
-<div className={`flex gap-3 border-b border-slate-100 px-3 py-2.5 sm:px-4
-min-h-[52px] ${rowBg} ${isLast ? "border-b-0" : ""}`}>
-<div className={`flex w-16 shrink-0 flex-col items-start pt-0.5 sm:w-20
-${dateColor}`}>
-<div className="flex items-center gap-1.5 mb-1">
-<input
-type="checkbox"
-checked={isDateSelected}
-onChange={() => onToggleSelectDate(dateStr, events)}
-className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
-title="이 날짜 전체 선택"
-/>
-</div>
-<div className="flex items-center gap-1 text-sm font-extrabold">
-{date.getDate()}
-<span className="text-xs font-bold">({WEEKDAY_KOR[dow]})</span>
-</div>
-{holidayName && (
-<span className="mt-0.5 inline-block text-[10px] font-bold leading-tight text-rose-500 break-keep">
-{holidayName}
+    if (isAAll && !isBAll) return -1;
+    if (!isAAll && isBAll) return 1;
+    if (isAAll && isBAll) {
+      return (a.content || "").localeCompare(b.content || "", "ko");
+    }
 
-</span>
-)}
-</div>
-<div className="min-w-0 flex-1 space-y-1.5">
-{sortedEvents.length === 0 ? (
-<p className="pt-0.5 text-xs text-slate-300">-</p>
-) : (
-sortedEvents.map((ev) => {
-const isChecked = selectedEventIds.has(ev.id);
-return (
-<div key={ev.id} className="flex items-center gap-2 group">
-<input
-type="checkbox"
-checked={isChecked}
-onChange={() => onToggleSelectEvent(ev.id)}
-className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
-title="개별 일정 선택"
-/>
-<button onClick={() => onOpenEvent(ev)} className="flex flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/85 transition min-w-0">
-<Badge
-className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
-<span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
-{ev.manager && (
-<span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
-{ev.manager}
-</span>
-)}
-</button>
-</div>
-);
-})
-)}
-</div>
-<button onClick={() => onAddEvent(dateStr)} className="flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-full text-slate-300 transition hover:bg-violet-100 hover:text-violet-500" title="이 날짜에 일정 추가">
+    const hasADept = !!a.dept;
+    const hasBDept = !!b.dept;
 
-<PlusIcon size={16} />
-</button>
-</div>
-);
+    if (hasADept && !hasBDept) return -1;
+    if (!hasADept && hasBDept) return 1;
+
+    if (hasADept && hasBDept) {
+      const deptCompare = (a.dept || "").localeCompare(b.dept || "", "ko");
+      if (deptCompare !== 0) return deptCompare;
+      return (a.content || "").localeCompare(b.content || "", "ko");
+    }
+
+    const gradeIdxA = gradeOrder.indexOf(a.grade);
+    const gradeIdxB = gradeOrder.indexOf(b.grade);
+    const safeIdxA = gradeIdxA !== -1 ? gradeIdxA : 999;
+    const safeIdxB = gradeIdxB !== -1 ? gradeIdxB : 999;
+
+    if (safeIdxA !== safeIdxB) {
+      return safeIdxA - safeIdxB;
+    }
+
+    return (a.content || "").localeCompare(b.content || "", "ko");
+  });
 }
+
+function DateRow({ date, today, events, isLast, onAddEvent, onOpenEvent, customHolidays, selectedEventIds, onToggleSelectEvent, onToggleSelectDate, isDateSelected }) {
+  const dateStr = ymd(date);
+  const dow = date.getDay();
+  const isToday = sameDay(date, today);
+  const holidayName = getHolidayName(dateStr, customHolidays);
+  const isHoliday = dow === 0 || !!holidayName;
+
+  const rowBg = isToday ? "bg-emerald-50/70" : isHoliday ? "bg-rose-50/40" : dow === 6 ? "bg-blue-50/30" : "bg-white";
+  const dateColor = isToday ? "text-emerald-600" : isHoliday ? "text-rose-500 font-black" : dow === 6 ? "text-blue-400" : "text-slate-500";
+
+  const sortedEvents = sortEvents(events);
+
+  return (
+    <div className={`flex gap-3 border-b border-slate-100 px-3 py-2.5 sm:px-4 min-h-[52px] ${rowBg} ${isLast ? "border-b-0" : ""}`}>
+      <div className={`flex w-16 shrink-0 flex-col items-start pt-0.5 sm:w-20 ${dateColor}`}>
+        <div className="flex items-center gap-1.5 mb-1">
+          <input
+            type="checkbox"
+            checked={isDateSelected}
+            onChange={() => onToggleSelectDate(dateStr, events)}
+            className="h-3.5 w-3.5 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
+            title="이 날짜 전체 선택"
+          />
+        </div>
+        <div className="flex items-center gap-1 text-sm font-extrabold">
+          {date.getDate()}
+          <span className="text-xs font-bold">({WEEKDAY_KOR[dow]})</span>
+        </div>
+        {holidayName && (
+          <span className="mt-0.5 inline-block text-[10px] font-bold leading-tight text-rose-500 break-keep">
+            {holidayName}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        {sortedEvents.length === 0 ? (
+          <p className="pt-0.5 text-xs text-slate-300">-</p>
+        ) : (
+          sortedEvents.map((ev) => {
+            const isChecked = selectedEventIds.has(ev.id);
+            return (
+              <div key={ev.id} className="flex items-center gap-2 group">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggleSelectEvent(ev.id)}
+                  className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer shrink-0"
+                  title="개별 일정 선택"
+                />
+                <button onClick={() => onOpenEvent(ev)} className="flex flex-1 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-slate-100/85 transition min-w-0">
+                  <Badge className={getTagStyle(tagLabel(ev))}>{tagLabel(ev)}</Badge>
+                  <span className="pt-0.5 text-[13px] leading-snug text-slate-700 font-medium truncate">{ev.content}</span>
+                  {ev.manager && (
+                    <span className="ml-auto shrink-0 pt-0.5 text-[13px] leading-snug text-slate-700 font-medium pl-2">
+                      {ev.manager}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })
+        )}
+      </div>
+      <button onClick={() => onAddEvent(dateStr)} className="flex h-6 w-6 shrink-0 items-center justify-center self-start rounded-full text-slate-300 transition hover:bg-violet-100 hover:text-violet-500" title="이 날짜에 일정 추가">
+        <PlusIcon size={16} />
+      </button>
+    </div>
+  );
+}
+
 function FilterRow({ label, items, selected, onToggle, onAll, onNone, editAction }) {
-return (
-<div>
-<div className="mb-1.5 flex items-center justify-between">
-<div className="flex items-center gap-2">
-<span className="text-xs font-bold text-slate-500">{label}</span>
-{editAction}
-</div>
-<div className="flex gap-1">
-<button onClick={onAll} className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
-<button onClick={onNone} className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제
-</button>
-</div>
-</div>
-<div className="flex flex-wrap gap-1.5">
-{items.map((item) => {
-const active = selected.has(item);
-return (
-<button key={item} onClick={() => onToggle(item)}
-className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition
-${active ? getTagStyle(item) : "border-slate-200 bg-white text-slate-300 hover:text-slate-400"}`}>
-{item}
-</button>
-);
-})}
-</div>
-</div>
-);
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-500">{label}</span>
+          {editAction}
+        </div>
+        <div className="flex gap-1">
+          <button onClick={onAll} className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 선택</button>
+          <button onClick={onNone} className="rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-200">일괄 해제</button>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => {
+          const active = selected.has(item);
+          return (
+            <button key={item} onClick={() => onToggle(item)} className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition ${active ? getTagStyle(item) : "border-slate-200 bg-white text-slate-300 hover:text-slate-400"}`}>
+              {item}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
+
 function App() {
-const today = new Date();
+  const today = new Date();
+  const [tab, setTab] = useState("month");
+  const [viewDate, setViewDate] = useState(new Date());
+  const [weekAnchor, setWeekAnchor] = useState(new Date());
 
-const [tab, setTab] = useState("month");
-const [viewDate, setViewDate] = useState(new Date());
-const [weekAnchor, setWeekAnchor] = useState(new Date());
-const [anonKey, setAnonKey] = useState(() => localStorage.getItem("sp_anon_key")
-|| DEFAULT_SUPABASE_ANON_KEY);
-const [keyModalOpen, setKeyModalOpen] = useState(false);
-const [keyInput, setKeyInput] = useState("");
-const [masterPassword, setMasterPassword] = useState(() =>
-localStorage.getItem("sp_master_pw") || MASTER_PASSWORD_DEFAULT);
-const [masterPwModalOpen, setMasterPwModalOpen] = useState(false);
-const [currentPwInput, setCurrentPwInput] = useState("");
-const [newPwInput, setNewPwInput] = useState("");
-const [newPwConfirmInput, setNewPwConfirmInput] = useState("");
-const [masterPwError, setMasterPwError] = useState("");
-const [masterPwSuccess, setMasterPwSuccess] = useState("");
-const [copiedEvent, setCopiedEvent] = useState(null);
-// 다중 선택 삭제 및 비밀번호 모달 상태
-const [selectedEventIds, setSelectedEventIds] = useState(new Set());
-const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-const [deletePwInput, setDeletePwInput] = useState("");
-const [deletePwError, setDeletePwError] = useState("");
-// 관리자 직책 명칭 목록 상태 관리
-const [adminRoles, setAdminRoles] = useState(() => {
-try { return JSON.parse(localStorage.getItem("sp_admin_roles")) ||
-INITIAL_ADMIN_ROLES; } catch { return INITIAL_ADMIN_ROLES; }
-});
-const [adminRoleModalStage, setAdminRoleModalStage] = useState(null);
-const [adminRolePwInput, setAdminRolePwInput] = useState("");
-const [adminRolePwError, setAdminRolePwError] = useState("");
-const [adminRoleEditRows, setAdminRoleEditRows] = useState([]);
-// 엑셀 업로드 모달 상태
-const [uploadModalOpen, setUploadModalOpen] = useState(false);
-const [uploadParsedEvents, setUploadParsedEvents] = useState([]);
-const [uploadStatus, setUploadStatus] = useState("");
-const fileInputRef = useRef(null);
+  const [anonKey, setAnonKey] = useState(() => localStorage.getItem("sp_anon_key") || DEFAULT_SUPABASE_ANON_KEY);
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [keyInput, setKeyInput] = useState("");
 
-const [customHolidays, setCustomHolidays] = useState(() => {
-try { return JSON.parse(localStorage.getItem("sp_custom_holidays")) || {}; } catch
-{ return {}; }
-});
-const [holidayModalStage, setHolidayModalStage] = useState(null);
-const [holidayPwInput, setHolidayPwInput] = useState("");
-const [holidayPwError, setHolidayPwError] = useState("");
-const [newHolDate, setNewHolDate] = useState(ymd(today));
-const [newHolName, setNewHolName] = useState("재량휴업일");
-const supabase = useMemo(() => {
-if (window.supabase && SUPABASE_URL && anonKey && anonKey !==
-"YOUR_SUPABASE_ANON_KEY_HERE") {
-try { return window.supabase.createClient(SUPABASE_URL, anonKey); } catch
-(err) { return null; }
-}
-return null;
-}, [anonKey]);
-const [depts, setDepts] = useState(INITIAL_DEPTS);
-const [selectedDepts, setSelectedDepts] = useState(new Set(INITIAL_DEPTS));
-const [selectedGrades, setSelectedGrades] = useState(new Set(GRADES));
-const [events, setEvents] = useState([]);
-const [adminWorkStatus, setAdminWorkStatus] = useState({});
-const isFirstDeptsLoadedRef = useRef(false);
-// manager 포함 폼 상태
-const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "",
-password: "" };
-const [eventModal, setEventModal] = useState(null);
-const [form, setForm] = useState(emptyForm);
-const [pwCheckInput, setPwCheckInput] = useState("");
-const [pwCheckError, setPwCheckError] = useState("");
-// 관리자 근무 입력 모달 상태
-const [adminModalStage, setAdminModalStage] = useState(null);
-const [adminTargetRole, setAdminTargetRole] = useState(null);
-const [adminTargetDate, setAdminTargetDate] = useState(ymd(today));
-const [adminSharedRoles, setAdminSharedRoles] = useState(new Set());
+  const [masterPassword, setMasterPassword] = useState(() => localStorage.getItem("sp_master_pw") || MASTER_PASSWORD_DEFAULT);
+  const [masterPwModalOpen, setMasterPwModalOpen] = useState(false);
+  const [currentPwInput, setCurrentPwInput] = useState("");
+  const [newPwInput, setNewPwInput] = useState("");
+  const [newPwConfirmInput, setNewPwConfirmInput] = useState("");
+  const [masterPwError, setMasterPwError] = useState("");
+  const [masterPwSuccess, setMasterPwSuccess] = useState("");
 
-const [adminCurrentInput, setAdminCurrentInput] = useState("");
-const [stagedAdminItems, setStagedAdminItems] = useState([]);
-const [adminPwInput, setAdminPwInput] = useState("");
-const [adminPwError, setAdminPwError] = useState("");
-const [adminFormTexts, setAdminFormTexts] = useState({});
-const [deptModalStage, setDeptModalStage] = useState(null);
-const [deptPwInput, setDeptPwInput] = useState("");
-const [deptPwError, setDeptPwError] = useState("");
-const [deptEditRows, setDeptEditRows] = useState([]);
-const fetchAllData = useCallback(async () => {
-if (! supabase) return;
-try {
-const { data: dbEvents } = await supabase.from('events').select('*');
-if (dbEvents) setEvents(dbEvents);
-} catch(e) {}
-try {
-const { data: dbDepts } = await supabase.from('depts').select('*').order('id', {
-ascending: true });
-if (dbDepts && dbDepts.length > 0) {
-const deptNames = dbDepts.map(d => d.name);
-setDepts(deptNames);
-if (! isFirstDeptsLoadedRef.current) {
-setSelectedDepts(new Set(deptNames));
-isFirstDeptsLoadedRef.current = true;
-} else {
-setSelectedDepts(prevSelected => {
-const next = new Set();
-prevSelected.forEach(d => { if (deptNames.includes(d)) next.add(d); });
-return next;
-});
-}
-}
-} catch(e) {}
-try {
-const { data: dbAdmin } = await supabase.from('admin_status').select('*');
-if (dbAdmin) {
-const map = {};
-dbAdmin.forEach(item => {
-if (item.week_key === 'custom_holidays_data') {
+  const [copiedEvent, setCopiedEvent] = useState(null);
 
-setCustomHolidays(item.data || {});
-localStorage.setItem("sp_custom_holidays", JSON.stringify(item.data || {}));
-} else if (item.week_key === 'admin_roles_data') {
-setAdminRoles(item.data || INITIAL_ADMIN_ROLES);
-localStorage.setItem("sp_admin_roles", JSON.stringify(item.data ||
-INITIAL_ADMIN_ROLES));
-} else {
-map[item.week_key] = item.data;
-}
-});
-setAdminWorkStatus(map);
-}
-} catch(e) {}
-}, [supabase]);
-useEffect(() => {
-fetchAllData();
-if (! supabase) return;
-const timer = setInterval(fetchAllData, 5000);
-let channel = null;
-try {
-channel = supabase.channel('realtime-planner')
-.on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () =>
-fetchAllData())
-.on('postgres_changes', { event: '*', schema: 'public', table: 'depts' }, () =>
-fetchAllData())
-.on('postgres_changes', { event: '*', schema: 'public', table: 'admin_status'
-}, () => fetchAllData())
-.subscribe();
-} catch (e) {}
-return () => {
-clearInterval(timer);
-if (channel) supabase.removeChannel(channel);
-};
-}, [supabase, fetchAllData]);
-const filteredEvents = useMemo(() => {
-return events.filter((e) => {
-const deptOk = e.dept === "" || selectedDepts.has(e.dept);
-const gradeOk = e.grade === "" || selectedGrades.has(e.grade);
-return deptOk && gradeOk;
+  // 다중 선택 삭제 및 비밀번호 모달 상태
+  const [selectedEventIds, setSelectedEventIds] = useState(new Set());
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePwInput, setDeletePwInput] = useState("");
+  const [deletePwError, setDeletePwError] = useState("");
 
-});
-}, [events, selectedDepts, selectedGrades]);
-const eventsByDate = useMemo(() => {
-const map = {};
-filteredEvents.forEach((e) => {
-if (! map[e.date]) map[e.date] = [];
-map[e.date].push(e);
-});
-return map;
-}, [filteredEvents]);
-const monthDays = getMonthDays(viewDate);
-const monthLabel = `${viewDate.getFullYear()}년 ${viewDate.getMonth() + 1}월`;
-const weekDates = getWeekdays(weekAnchor);
-const weekStart = weekDates[0];
-const weekEnd = weekDates[4];
-const weekKey = ymd(weekStart);
-const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()} ~
-${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
-const currentWeekTexts = adminWorkStatus[weekKey] || {};
-const modalWeekCalculated = useMemo(() => {
-try {
-const d = new Date(adminTargetDate);
-if (isNaN(d.getTime())) return { key: weekKey, label: weekLabel, dayStr: "" };
-const wDates = getWeekdays(d);
-const wSt = wDates[0];
-const wEn = wDates[4];
-const wK = ymd(wSt);
-const wLbl = `${wSt.getMonth() + 1}/${wSt.getDate()} ~ ${wEn.getMonth() +
-1}/${wEn.getDate()}`;
-const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
-return { key: wK, label: wLbl, dayStr };
-} catch {
-return { key: weekKey, label: weekLabel, dayStr: "" };
-}
-}, [adminTargetDate, weekKey, weekLabel]);
-// 체크박스 선택/해제 핸들러
-const handleToggleSelectEvent = (id) => {
+  // 관리자 직책 명칭 목록 상태 관리
+  const [adminRoles, setAdminRoles] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sp_admin_roles")) || INITIAL_ADMIN_ROLES; } catch { return INITIAL_ADMIN_ROLES; }
+  });
+  const [adminRoleModalStage, setAdminRoleModalStage] = useState(null);
+  const [adminRolePwInput, setAdminRolePwInput] = useState("");
+  const [adminRolePwError, setAdminRolePwError] = useState("");
+  const [adminRoleEditRows, setAdminRoleEditRows] = useState([]);
 
-setSelectedEventIds(prev => {
-const next = new Set(prev);
-if (next.has(id)) next.delete(id);
-else next.add(id);
-return next;
-});
-};
-// 특정 날짜의 모든 일정 토글 (날짜 앞 체크박스)
-const handleToggleSelectDate = (dateStr, dateEvents) => {
-const evIds = dateEvents.map(e => e.id);
-if (evIds.length === 0) return;
-const allChecked = evIds.every(id => selectedEventIds.has(id));
-setSelectedEventIds(prev => {
-const next = new Set(prev);
-evIds.forEach(id => {
-if (allChecked) next.delete(id);
-else next.add(id);
-});
-return next;
-});
-};
-// 현재 보이는 월의 모든 일정 토글 (월 전체 선택/해제)
-const handleToggleSelectCurrentMonth = () => {
-const currentMonthEventIds = [];
-monthDays.forEach(d => {
-const dStr = ymd(d);
-const evs = eventsByDate[dStr] || [];
-evs.forEach(e => currentMonthEventIds.push(e.id));
-});
-if (currentMonthEventIds.length === 0) return;
-const allChecked = currentMonthEventIds.every(id => selectedEventIds.has(id));
-setSelectedEventIds(prev => {
-const next = new Set(prev);
-currentMonthEventIds.forEach(id => {
-if (allChecked) next.delete(id);
-else next.add(id);
+  // 엑셀 업로드 모달 상태
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadParsedEvents, setUploadParsedEvents] = useState([]);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const fileInputRef = useRef(null);
 
-});
-return next;
-});
-};
-const isCurrentMonthAllSelected = useMemo(() => {
-const currentMonthEventIds = [];
-monthDays.forEach(d => {
-const dStr = ymd(d);
-const evs = eventsByDate[dStr] || [];
-evs.forEach(e => currentMonthEventIds.push(e.id));
-});
-if (currentMonthEventIds.length === 0) return false;
-return currentMonthEventIds.every(id => selectedEventIds.has(id));
-}, [monthDays, eventsByDate, selectedEventIds]);
-// 선택 삭제 버튼 클릭 시 비밀번호 모달 열기
-const openDeleteModal = () => {
-if (selectedEventIds.size === 0) {
-alert("삭제할 일정을 체크박스로 선택해주세요.");
-return;
-}
-setDeletePwInput("");
-setDeletePwError("");
-setDeleteModalOpen(true);
-};
-// 비밀번호 확인 후 선택 삭제 실행
-const confirmBatchDelete = async () => {
-if (deletePwInput !== masterPassword) {
-setDeletePwError("마스터 비밀번호가 일치하지 않습니다.");
-return;
-}
-const idsArr = Array.from(selectedEventIds);
-if (supabase) {
-await supabase.from('events').delete().in('id', idsArr);
-}
-setEvents(prev => prev.filter(ev => ! selectedEventIds.has(ev.id)));
-setSelectedEventIds(new Set());
-setDeleteModalOpen(false);
+  const [customHolidays, setCustomHolidays] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("sp_custom_holidays")) || {}; } catch { return {}; }
+  });
+  const [holidayModalStage, setHolidayModalStage] = useState(null);
+  const [holidayPwInput, setHolidayPwInput] = useState("");
+  const [holidayPwError, setHolidayPwError] = useState("");
+  const [newHolDate, setNewHolDate] = useState(ymd(today));
+  const [newHolName, setNewHolName] = useState("재량휴업일");
 
-alert("선택한 일정이 안전하게 삭제되었습니다.");
-};
-// ==================== [관리자 직책명 수정 모달 핸들러] ====================
-const openAdminRoleEdit = () => {
-setAdminRolePwInput("");
-setAdminRolePwError("");
-setAdminRoleModalStage("password");
-};
-const submitAdminRolePassword = () => {
-if (adminRolePwInput !== masterPassword) {
-setAdminRolePwError("비밀번호가 일치하지 않습니다.");
-return;
-}
-setAdminRoleEditRows(adminRoles.map((r, i) => ({ key: `r${i}`, value: r })));
-setAdminRoleModalStage("edit");
-};
-const updateAdminRoleRow = (key, value) => {
-setAdminRoleEditRows(prev => prev.map(r => r.key === key ? { ...r, value } :
-r));
-};
-const saveAdminRoleEdits = async () => {
-const newRoles = adminRoleEditRows.map(r => r.value.trim()).filter(v => v.length
-> 0);
-const dedupedRoles = Array.from(new Set(newRoles));
-if (dedupedRoles.length === 0) return;
-setAdminRoles(dedupedRoles);
-localStorage.setItem("sp_admin_roles", JSON.stringify(dedupedRoles));
-if (supabase) {
-await supabase.from('admin_status').upsert([{ week_key: 'admin_roles_data',
-data: dedupedRoles }]);
-}
-setAdminRoleModalStage(null);
-};
-// ==================== [엑셀 샘플 양식 다운로드 & 업로드 파싱]
+  const supabase = useMemo(() => {
+    if (window.supabase && SUPABASE_URL && anonKey && anonKey !== "YOUR_SUPABASE_ANON_KEY_HERE") {
+      try { return window.supabase.createClient(SUPABASE_URL, anonKey); } catch (err) { return null; }
+    }
+    return null;
+  }, [anonKey]);
 
-// ====================
-const handleDownloadSampleTemplate = () => {
-const sampleRows = [
-["날짜(YYYY-MM-DD)", "담당부서", "학년", "행사내용", "담당자", "비밀번호(4자리) 또 는 직책(관리자용)"],
-["2026-10-01", "교무기획", "전체", "10월 개교기념일 행사(09:00~, 강당)", "홍길동",
-"1234"],
-["2026-10-02", "교육정보", "5학년", "학교폭력예방교육(1~3교시)", "김철수", "1234"],
-["2026-10-05", "관리자근무", "관리자", "서구청 출장협의회", "교장", "교감(교무)"],
-["2026-10-07", "학생생활", "전체", "학교폭력예방 특별교육", "이영희", "1234"]
-];
-const csvString = sampleRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
-const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
-const link = document.createElement("a");
-link.href = URL.createObjectURL(blob);
-link.setAttribute("download", "경연초_학사일정_업로드_양식.csv");
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-};
-const handleFileUpload = (e) => {
-const file = e.target.files[0];
-if (! file) return;
-const reader = new FileReader();
-reader.onload = async (event) => {
-try {
-const text = event.target.result;
-const rows = parseCSV(text);
-if (rows.length <= 1) {
-setUploadStatus("파일에 데이터가 없습니다.");
-return;
-}
-const parsedEvents = [];
-const adminUpdatesToProcess = [];
-for (let i = 1; i < rows.length; i++) {
-const row = rows[i];
-if (! row || row.length === 0) continue;
+  const [depts, setDepts] = useState(INITIAL_DEPTS);
+  const [selectedDepts, setSelectedDepts] = useState(new Set(INITIAL_DEPTS));
+  const [selectedGrades, setSelectedGrades] = useState(new Set(GRADES));
+  const [events, setEvents] = useState([]);
+  const [adminWorkStatus, setAdminWorkStatus] = useState({});
 
-const rawDate = row[0] || "";
-const dept = row[1] || "";
-const grade = row[2] || "";
-const content = row[3] || "";
-const manager = row[4] || "";
-const col5 = row[5] || "1234";
-let dateStr = rawDate.replace(/\./g, "-").replace(/\//g, "-").trim();
-if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-const parts = dateStr.split("-");
-dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2,
-'0')}`;
-}
-if (dateStr && content.trim()) {
-if (dept === "관리자근무" || adminRoles.includes(col5)) {
-const targetRole = adminRoles.includes(col5) ? col5 : adminRoles[1] ||
-"교감(교무)";
-const d = new Date(dateStr);
-if (! isNaN(d.getTime())) {
-const wKey = ymd(startOfWeekMon(d));
-const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
-adminUpdatesToProcess.push({ weekKey: wKey, role: targetRole,
-content: `${dayStr} ${content.trim()}` });
-}
-} else {
-parsedEvents.push({
-id: Math.floor(Date.now() % 2147483647) + i,
-date: dateStr,
-dept: dept === "전체" ? "" : dept,
-grade: grade === "전체" ? "" : grade,
-content: content.trim(),
-manager: manager.trim(),
-password: col5.replace(/\D/g, "").slice(0, 4) || "1234"
-});
-}
-}
-}
-if (parsedEvents.length > 0 && supabase) {
-await supabase.from('events').insert(parsedEvents);
+  const isFirstDeptsLoadedRef = useRef(false);
 
-setEvents(prev => [...prev, ...parsedEvents]);
-}
-if (adminUpdatesToProcess.length > 0) {
-const updatedMap = { ...adminWorkStatus };
-const weekKeysToUpsert = new Set();
-adminUpdatesToProcess.forEach(up => {
-weekKeysToUpsert.add(up.weekKey);
-const curData = { ...(updatedMap[up.weekKey] || {}) };
-const oldVal = curData[up.role] && curData[up.role] !== "특이사항 없음"
-? curData[up.role].trim() : "";
-if (oldVal) {
-if (! oldVal.includes(up.content)) curData[up.role] =
-`${oldVal}\n${up.content}`;
-} else {
-curData[up.role] = up.content;
-}
-updatedMap[up.weekKey] = curData;
-});
-if (supabase) {
-const upsertRows = Array.from(weekKeysToUpsert).map(wk => ({
-week_key: wk,
-data: updatedMap[wk]
-}));
-await supabase.from('admin_status').upsert(upsertRows);
-}
-setAdminWorkStatus(updatedMap);
-}
-alert(`엑셀 업로드 완료! (일정 ${parsedEvents.length}개, 관리자 근무
-${adminUpdatesToProcess.length}개 등록됨)`);
-setUploadModalOpen(false);
-setUploadParsedEvents([]);
-setUploadStatus("");
-} catch (err) {
-setUploadStatus("파일 읽기 오류: " + err.message);
-}
-};
-reader.readAsText(file, "EUC-KR");
-};
+  // manager 포함 폼 상태
+  const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
+  const [eventModal, setEventModal] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [pwCheckInput, setPwCheckInput] = useState("");
+  const [pwCheckError, setPwCheckError] = useState("");
 
-const handleConfirmUpload = async () => {};
-  // ==================== [출력/저장: 1일 1행 원칙 + Excel 셀 내부 줄바꿈 적용] ====================
+  // 관리자 근무 입력 모달 상태
+  const [adminModalStage, setAdminModalStage] = useState(null);
+  const [adminTargetRole, setAdminTargetRole] = useState(null);
+  const [adminTargetDate, setAdminTargetDate] = useState(ymd(today));
+  const [adminSharedRoles, setAdminSharedRoles] = useState(new Set());
+  const [adminCurrentInput, setAdminCurrentInput] = useState("");
+  const [stagedAdminItems, setStagedAdminItems] = useState([]);
+  const [adminPwInput, setAdminPwInput] = useState("");
+  const [adminPwError, setAdminPwError] = useState("");
+  const [adminFormTexts, setAdminFormTexts] = useState({});
+
+  const [deptModalStage, setDeptModalStage] = useState(null);
+  const [deptPwInput, setDeptPwInput] = useState("");
+  const [deptPwError, setDeptPwError] = useState("");
+  const [deptEditRows, setDeptEditRows] = useState([]);
+
+  const fetchAllData = useCallback(async () => {
+    if (!supabase) return;
+    try {
+      const { data: dbEvents } = await supabase.from('events').select('*');
+      if (dbEvents) setEvents(dbEvents);
+    } catch(e) {}
+    try {
+      const { data: dbDepts } = await supabase.from('depts').select('*').order('id', { ascending: true });
+      if (dbDepts && dbDepts.length > 0) {
+        const deptNames = dbDepts.map(d => d.name);
+        setDepts(deptNames);
+        if (!isFirstDeptsLoadedRef.current) {
+          setSelectedDepts(new Set(deptNames));
+          isFirstDeptsLoadedRef.current = true;
+        } else {
+          setSelectedDepts(prevSelected => {
+            const next = new Set();
+            prevSelected.forEach(d => { if (deptNames.includes(d)) next.add(d); });
+            return next;
+          });
+        }
+      }
+    } catch(e) {}
+    try {
+      const { data: dbAdmin } = await supabase.from('admin_status').select('*');
+      if (dbAdmin) {
+        const map = {};
+        dbAdmin.forEach(item => {
+          if (item.week_key === 'custom_holidays_data') {
+            setCustomHolidays(item.data || {});
+            localStorage.setItem("sp_custom_holidays", JSON.stringify(item.data || {}));
+          } else if (item.week_key === 'admin_roles_data') {
+            setAdminRoles(item.data || INITIAL_ADMIN_ROLES);
+            localStorage.setItem("sp_admin_roles", JSON.stringify(item.data || INITIAL_ADMIN_ROLES));
+          } else {
+            map[item.week_key] = item.data;
+          }
+        });
+        setAdminWorkStatus(map);
+      }
+    } catch(e) {}
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchAllData();
+    if (!supabase) return;
+    const timer = setInterval(fetchAllData, 5000);
+    let channel = null;
+    try {
+      channel = supabase.channel('realtime-planner')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => fetchAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'depts' }, () => fetchAllData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_status' }, () => fetchAllData())
+        .subscribe();
+    } catch (e) {}
+    return () => {
+      clearInterval(timer);
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchAllData]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((e) => {
+      const deptOk = e.dept === "" || selectedDepts.has(e.dept);
+      const gradeOk = e.grade === "" || selectedGrades.has(e.grade);
+      return deptOk && gradeOk;
+    });
+  }, [events, selectedDepts, selectedGrades]);
+
+  const eventsByDate = useMemo(() => {
+    const map = {};
+    filteredEvents.forEach((e) => {
+      if (!map[e.date]) map[e.date] = [];
+      map[e.date].push(e);
+    });
+    return map;
+  }, [filteredEvents]);
+
+  const monthDays = getMonthDays(viewDate);
+  const monthLabel = `${viewDate.getFullYear()}년 ${viewDate.getMonth() + 1}월`;
+  const weekDates = getWeekdays(weekAnchor);
+  const weekStart = weekDates[0];
+  const weekEnd = weekDates[4];
+  const weekKey = ymd(weekStart);
+  const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()} ~ ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`;
+  const currentWeekTexts = adminWorkStatus[weekKey] || {};
+
+  const modalWeekCalculated = useMemo(() => {
+    try {
+      const d = new Date(adminTargetDate);
+      if (isNaN(d.getTime())) return { key: weekKey, label: weekLabel, dayStr: "" };
+      const wDates = getWeekdays(d);
+      const wSt = wDates[0];
+      const wEn = wDates[4];
+      const wK = ymd(wSt);
+      const wLbl = `${wSt.getMonth() + 1}/${wSt.getDate()} ~ ${wEn.getMonth() + 1}/${wEn.getDate()}`;
+      const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
+      return { key: wK, label: wLbl, dayStr };
+    } catch {
+      return { key: weekKey, label: weekLabel, dayStr: "" };
+    }
+  }, [adminTargetDate, weekKey, weekLabel]);
+
+  // 체크박스 선택/해제 핸들러
+  const handleToggleSelectEvent = (id) => {
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // 특정 날짜의 모든 일정 토글 (날짜 앞 체크박스)
+  const handleToggleSelectDate = (dateStr, dateEvents) => {
+    const evIds = dateEvents.map(e => e.id);
+    if (evIds.length === 0) return;
+    const allChecked = evIds.every(id => selectedEventIds.has(id));
+
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      evIds.forEach(id => {
+        if (allChecked) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
+
+  // 현재 보이는 월의 모든 일정 토글 (월 전체 선택/해제)
+  const handleToggleSelectCurrentMonth = () => {
+    const currentMonthEventIds = [];
+    monthDays.forEach(d => {
+      const dStr = ymd(d);
+      const evs = eventsByDate[dStr] || [];
+      evs.forEach(e => currentMonthEventIds.push(e.id));
+    });
+
+    if (currentMonthEventIds.length === 0) return;
+    const allChecked = currentMonthEventIds.every(id => selectedEventIds.has(id));
+
+    setSelectedEventIds(prev => {
+      const next = new Set(prev);
+      currentMonthEventIds.forEach(id => {
+        if (allChecked) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
+
+  const isCurrentMonthAllSelected = useMemo(() => {
+    const currentMonthEventIds = [];
+    monthDays.forEach(d => {
+      const dStr = ymd(d);
+      const evs = eventsByDate[dStr] || [];
+      evs.forEach(e => currentMonthEventIds.push(e.id));
+    });
+    if (currentMonthEventIds.length === 0) return false;
+    return currentMonthEventIds.every(id => selectedEventIds.has(id));
+  }, [monthDays, eventsByDate, selectedEventIds]);
+
+  // 선택 삭제 버튼 클릭 시 비밀번호 모달 열기
+  const openDeleteModal = () => {
+    if (selectedEventIds.size === 0) {
+      alert("삭제할 일정을 체크박스로 선택해주세요.");
+      return;
+    }
+    setDeletePwInput("");
+    setDeletePwError("");
+    setDeleteModalOpen(true);
+  };
+
+  // 비밀번호 확인 후 선택 삭제 실행
+  const confirmBatchDelete = async () => {
+    if (deletePwInput !== masterPassword) {
+      setDeletePwError("마스터 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    const idsArr = Array.from(selectedEventIds);
+    if (supabase) {
+      await supabase.from('events').delete().in('id', idsArr);
+    }
+    setEvents(prev => prev.filter(ev => !selectedEventIds.has(ev.id)));
+    setSelectedEventIds(new Set());
+    setDeleteModalOpen(false);
+    alert("선택한 일정이 안전하게 삭제되었습니다.");
+  };
+
+  // ==================== [관리자 직책명 수정 모달 핸들러] ====================
+  const openAdminRoleEdit = () => {
+    setAdminRolePwInput("");
+    setAdminRolePwError("");
+    setAdminRoleModalStage("password");
+  };
+
+  const submitAdminRolePassword = () => {
+    if (adminRolePwInput !== masterPassword) {
+      setAdminRolePwError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    setAdminRoleEditRows(adminRoles.map((r, i) => ({ key: `r${i}`, value: r })));
+    setAdminRoleModalStage("edit");
+  };
+
+  const updateAdminRoleRow = (key, value) => {
+    setAdminRoleEditRows(prev => prev.map(r => r.key === key ? { ...r, value } : r));
+  };
+
+  const saveAdminRoleEdits = async () => {
+    const newRoles = adminRoleEditRows.map(r => r.value.trim()).filter(v => v.length > 0);
+    const dedupedRoles = Array.from(new Set(newRoles));
+    if (dedupedRoles.length === 0) return;
+
+    setAdminRoles(dedupedRoles);
+    localStorage.setItem("sp_admin_roles", JSON.stringify(dedupedRoles));
+
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'admin_roles_data', data: dedupedRoles }]);
+    }
+    setAdminRoleModalStage(null);
+  };
+
+  // ==================== [엑셀 샘플 양식 다운로드 & 업로드 파싱] ====================
+  const handleDownloadSampleTemplate = () => {
+    const sampleRows = [
+      ["날짜(YYYY-MM-DD)", "담당부서", "학년", "행사내용", "담당자", "비밀번호(4자리) 또는 직책(관리자용)"],
+      ["2026-10-01", "교무기획", "전체", "10월 개교기념일 행사(09:00~, 강당)", "홍길동", "1234"],
+      ["2026-10-02", "교육정보", "5학년", "학교폭력예방교육(1~3교시)", "김철수", "1234"],
+      ["2026-10-05", "관리자근무", "관리자", "서구청 출장협의회", "교장", "교감(교무)"],
+      ["2026-10-07", "학생생활", "전체", "학교폭력예방 특별교육", "이영희", "1234"]
+    ];
+    const csvString = sampleRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", "경연초_학사일정_업로드_양식.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target.result;
+        const rows = parseCSV(text);
+        if (rows.length <= 1) {
+          setUploadStatus("파일에 데이터가 없습니다.");
+          return;
+        }
+
+        const parsedEvents = [];
+        const adminUpdatesToProcess = [];
+
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+          const rawDate = row[0] || "";
+          const dept = row[1] || "";
+          const grade = row[2] || "";
+          const content = row[3] || "";
+          const manager = row[4] || "";
+          const col5 = row[5] || "1234";
+
+          let dateStr = rawDate.replace(/\./g, "-").replace(/\//g, "-").trim();
+          if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+            const parts = dateStr.split("-");
+            dateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+          }
+
+          if (dateStr && content.trim()) {
+            if (dept === "관리자근무" || adminRoles.includes(col5)) {
+              const targetRole = adminRoles.includes(col5) ? col5 : adminRoles[1] || "교감(교무)";
+              const d = new Date(dateStr);
+              if (!isNaN(d.getTime())) {
+                const wKey = ymd(startOfWeekMon(d));
+                const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
+                adminUpdatesToProcess.push({ weekKey: wKey, role: targetRole, content: `${dayStr} ${content.trim()}` });
+              }
+            } else {
+              parsedEvents.push({
+                id: Math.floor(Date.now() % 2147483647) + i,
+                date: dateStr,
+                dept: dept === "전체" ? "" : dept,
+                grade: grade === "전체" ? "" : grade,
+                content: content.trim(),
+                manager: manager.trim(),
+                password: col5.replace(/\D/g, "").slice(0, 4) || "1234"
+              });
+            }
+          }
+        }
+
+        if (parsedEvents.length > 0 && supabase) {
+          await supabase.from('events').insert(parsedEvents);
+          setEvents(prev => [...prev, ...parsedEvents]);
+        }
+
+        if (adminUpdatesToProcess.length > 0) {
+          const updatedMap = { ...adminWorkStatus };
+          const weekKeysToUpsert = new Set();
+          adminUpdatesToProcess.forEach(up => {
+            weekKeysToUpsert.add(up.weekKey);
+            const curData = { ...(updatedMap[up.weekKey] || {}) };
+            const oldVal = curData[up.role] && curData[up.role] !== "특이사항 없음" ? curData[up.role].trim() : "";
+            if (oldVal) {
+              if (!oldVal.includes(up.content)) curData[up.role] = `${oldVal}\n${up.content}`;
+            } else {
+              curData[up.role] = up.content;
+            }
+            updatedMap[up.weekKey] = curData;
+          });
+
+          if (supabase) {
+            const upsertRows = Array.from(weekKeysToUpsert).map(wk => ({
+              week_key: wk,
+              data: updatedMap[wk]
+            }));
+            await supabase.from('admin_status').upsert(upsertRows);
+          }
+          setAdminWorkStatus(updatedMap);
+        }
+
+        alert(`엑셀 업로드 완료! (일정 ${parsedEvents.length}개, 관리자 근무 ${adminUpdatesToProcess.length}개 등록됨)`);
+        setUploadModalOpen(false);
+        setUploadParsedEvents([]);
+        setUploadStatus("");
+      } catch (err) {
+        setUploadStatus("파일 읽기 오류: " + err.message);
+      }
+    };
+    reader.readAsText(file, "EUC-KR");
+  };
+
+  const handleConfirmUpload = async () => {};
+
+  // ==================== [출력/저장: 1일 1행 원칙 + 진정한 Alt+Enter 줄바꿈 실현] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // Excel에서 한 날짜의 여러 행사를 "한 셀 안의 여러 줄"로 표시하기 위한 이스케이프 함수
-    // HTML <br>에 mso-data-placement:same-cell을 직접 지정해야 Excel이 행을 분리하지 않습니다.
+    // Excel 전용 줄바꿈(&#10;) 엔티티로 변환하여 셀 내부에서 Alt + Enter 효과 발동
     const escapeToExcelCell = (str) => {
       if (!str) return "";
       return String(str)
@@ -822,10 +793,10 @@ const handleConfirmUpload = async () => {};
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        .replace(/\r\n|\n|\r/g, '<br style="mso-data-placement:same-cell;" />');
+        .replace(/\r\n|\n|\r/g, "&#10;");
     };
 
-    // 해당 날짜의 관리자 근무 내역을 날짜별로 추출하여 비고 셀 안에서 줄바꿈
+    // 해당 날짜의 관리자 근무 내역을 진정한 줄바꿈(\n)으로 통합 추출
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -838,9 +809,8 @@ const handleConfirmUpload = async () => {};
           const text = weekAdminData[role];
           if (text && text !== "특이사항 없음") {
             let formalRole = role;
-            if (role.includes("교장")) {
-              formalRole = "교장선생님";
-            } else if (role.includes("교감")) {
+            if (role.includes("교장")) formalRole = "교장선생님";
+            else if (role.includes("교감")) {
               const subType = role.match(/\((.*?)\)/);
               formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
             }
@@ -849,12 +819,12 @@ const handleConfirmUpload = async () => {};
             lines.forEach(line => {
               const tLine = line.trim();
               if (!tLine) return;
-
+              
               const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
               if (match) {
                 const lineDayNum = parseInt(match[1], 10);
                 if (lineDayNum === targetDayNum) {
-                  const contentOnly = tLine.replace(/^(\d{1,2})\s*\(([월화수목금토일])\)\s*/, '').trim();
+                  const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
                   if (contentOnly) {
                     let descPart = contentOnly;
                     if (descPart.includes(",")) {
@@ -869,7 +839,6 @@ const handleConfirmUpload = async () => {};
           }
         }
       });
-
       return remarks.length > 0 ? remarks.join("\n\n") : "";
     };
 
@@ -904,7 +873,6 @@ const handleConfirmUpload = async () => {};
             mso-data-placement: same-cell;
             white-space: pre-wrap;
           }
-          br { mso-data-placement: same-cell; }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; vertical-align: middle; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; vertical-align: middle; }
           .col-dow { width: 50px; text-align: center; font-size: 10pt; vertical-align: middle; }
@@ -926,7 +894,7 @@ const handleConfirmUpload = async () => {};
           </tr>
     `;
 
-    // 날짜별로 정확히 1개의 행만 만들고, 같은 날짜의 여러 행사는 셀 내부 줄바꿈으로 표시합니다.
+    // 1일 = 무조건 단 1개의 <tr>로 생성 (내용과 담당자는 \n으로 묶어 단일 셀 내에서 Alt+Enter 구현)
     activeDays.forEach(d => {
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -983,1135 +951,1044 @@ const handleConfirmUpload = async () => {};
     link.click();
     document.body.removeChild(link);
 
-    // 생성한 Blob URL은 다운로드 후 해제합니다.
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
   };
+
   const handleDownloadExcel = () => {
     handlePrint();
   };
-const toggleInSet = (set, setter, value) => {
-const next = new Set(set);
-if (next.has(value)) next.delete(value);
-else next.add(value);
-setter(next);
-};
-const goPrev = () => (tab === "month" ? setViewDate((d) => addMonths(d, -1)) :
-setWeekAnchor((d) => addDays(d, -7)));
-const goNext = () => (tab === "month" ? setViewDate((d) => addMonths(d, 1)) :
-setWeekAnchor((d) => addDays(d, 7)));
-const goToday = () => {
-if (tab === "month") setViewDate(new Date());
-else setWeekAnchor(new Date());
-};
-const openAddEvent = (dateStr) => {
-if (copiedEvent) {
-setForm({
-date: dateStr || ymd(today),
-dept: copiedEvent.dept || "",
-grade: copiedEvent.grade || "",
-content: copiedEvent.content || "",
-manager: copiedEvent.manager || "",
-password: copiedEvent.password || ""
 
-});
-} else {
-setForm({ ...emptyForm, date: dateStr || ymd(today) });
+  const toggleInSet = (set, setter, value) => {
+    const next = new Set(set);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    setter(next);
+  };
+
+  const goPrev = () => (tab === "month" ? setViewDate((d) => addMonths(d, -1)) : setWeekAnchor((d) => addDays(d, -7)));
+  const goNext = () => (tab === "month" ? setViewDate((d) => addMonths(d, 1)) : setWeekAnchor((d) => addDays(d, 7)));
+  const goToday = () => {
+    if (tab === "month") setViewDate(new Date());
+    else setWeekAnchor(new Date());
+  };
+
+  const openAddEvent = (dateStr) => {
+    if (copiedEvent) {
+      setForm({
+        date: dateStr || ymd(today),
+        dept: copiedEvent.dept || "",
+        grade: copiedEvent.grade || "",
+        content: copiedEvent.content || "",
+        manager: copiedEvent.manager || "",
+        password: copiedEvent.password || ""
+      });
+    } else {
+      setForm({ ...emptyForm, date: dateStr || ymd(today) });
+    }
+    setPwCheckInput("");
+    setPwCheckError("");
+    setEventModal({ mode: "add" });
+  };
+
+  const openEditEvent = (ev) => {
+    setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, content: ev.content, manager: ev.manager || "", password: ev.password });
+    setPwCheckInput("");
+    setPwCheckError("");
+    setEventModal({ mode: "edit", data: ev });
+  };
+
+  const copyCurrentEvent = () => {
+    if (!form.content.trim()) return;
+    setCopiedEvent({ dept: form.dept, grade: form.grade, content: form.content, manager: form.manager, password: form.password });
+    closeEventModal();
+  };
+
+  const closeEventModal = () => setEventModal(null);
+  const isValidPw = (v) => /^\d{4}$/.test(v);
+
+  const saveEvent = async () => {
+    if (!form.content.trim()) return;
+    if (eventModal.mode === "add") {
+      if (!isValidPw(form.password)) {
+        setPwCheckError("비밀번호는 숫자 4자리로 설정해 주세요.");
+        return;
+      }
+      const numericId = Math.floor(Date.now() % 2147483647);
+      const newEv = { id: numericId, ...form };
+      if (supabase) {
+        const { error } = await supabase.from('events').insert([newEv]);
+        if (error) { setPwCheckError("DB 저장 실패: " + error.message); return; }
+      }
+      setEvents((prev) => [...prev, newEv]);
+      closeEventModal();
+    } else {
+      if (pwCheckInput !== eventModal.data.password && pwCheckInput !== masterPassword) {
+        setPwCheckError("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+      if (supabase) {
+        const { error } = await supabase.from('events').update(form).eq('id', eventModal.data.id);
+        if (error) { setPwCheckError("DB 수정 실패: " + error.message); return; }
+      }
+      setEvents((prev) => prev.map((e) => (e.id === eventModal.data.id ? { ...e, ...form } : e)));
+      closeEventModal();
+    }
+  };
+
+  const deleteEvent = async () => {
+    if (pwCheckInput !== eventModal.data.password && pwCheckInput !== masterPassword) {
+      setPwCheckError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (supabase) {
+      const { error } = await supabase.from('events').delete().eq('id', eventModal.data.id);
+      if (error) { setPwCheckError("DB 삭제 실패: " + error.message); return; }
+    }
+    setEvents((prev) => prev.filter((e) => e.id !== eventModal.data.id));
+    closeEventModal();
+  };
+
+  const openMasterPwModal = () => {
+    setCurrentPwInput(""); setNewPwInput(""); setNewPwConfirmInput(""); setMasterPwError(""); setMasterPwSuccess("");
+    setMasterPwModalOpen(true);
+  };
+
+  const handleSaveMasterPassword = () => {
+    setMasterPwError(""); setMasterPwSuccess("");
+    if (currentPwInput !== masterPassword) { setMasterPwError("현재 마스터 비밀번호가 일치하지 않습니다."); return; }
+    if (!newPwInput.trim()) { setMasterPwError("새 비밀번호를 입력해주세요."); return; }
+    if (newPwInput !== newPwConfirmInput) { setMasterPwError("새 비밀번호가 일치하지 않습니다."); return; }
+    const cleanPw = newPwInput.trim();
+    localStorage.setItem("sp_master_pw", cleanPw);
+    setMasterPassword(cleanPw);
+    setMasterPwSuccess("마스터 비밀번호가 성공적으로 변경되었습니다.");
+    setTimeout(() => { setMasterPwModalOpen(false); }, 1200);
+  };
+
+  const handleResetMasterPassword = () => {
+    if (window.confirm("마스터 비밀번호를 초기값(1234)으로 리셋하시겠습니까?")) {
+      localStorage.setItem("sp_master_pw", MASTER_PASSWORD_DEFAULT);
+      setMasterPassword(MASTER_PASSWORD_DEFAULT);
+      setMasterPwSuccess("마스터 비밀번호가 초기값(1234)으로 리셋되었습니다.");
+      setTimeout(() => { setMasterPwModalOpen(false); }, 1200);
+    }
+  };
+
+  const openHolidayModal = () => {
+    setHolidayPwInput(""); setHolidayPwError(""); setHolidayModalStage("password");
+  };
+
+  const submitHolidayPassword = () => {
+    if (holidayPwInput !== masterPassword) { setHolidayPwError("비밀번호가 일치하지 않습니다."); return; }
+    setHolidayModalStage("edit");
+  };
+
+  const addCustomHoliday = async () => {
+    if (!newHolDate || !newHolName.trim()) return;
+    const updated = { ...customHolidays, [newHolDate]: newHolName.trim() };
+    setCustomHolidays(updated);
+    localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
+    }
+  };
+
+  const removeCustomHoliday = async (dateKey) => {
+    const updated = { ...customHolidays };
+    delete updated[dateKey];
+    setCustomHolidays(updated);
+    localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: 'custom_holidays_data', data: updated }]);
+    }
+  };
+
+  const openAdminInput = (role = 'ALL') => {
+    setAdminTargetRole(role);
+    setAdminTargetDate(tab === "week" ? ymd(weekStart) : ymd(today));
+    setAdminSharedRoles(new Set());
+    setAdminCurrentInput("");
+    setStagedAdminItems([]);
+    setAdminPwInput("");
+    setAdminPwError("");
+    setAdminModalStage("password");
+  };
+
+  const submitAdminPassword = () => {
+    if (adminPwInput !== masterPassword) { setAdminPwError("비밀번호가 일치하지 않습니다."); return; }
+    const targetWKey = weekKey;
+    const savedData = adminWorkStatus[targetWKey] || {};
+    
+    if (adminTargetRole === 'ALL') {
+      const base = {};
+      adminRoles.forEach((r) => {
+        const val = savedData[r];
+        base[r] = (val && val !== "특이사항 없음") ? val : "";
+      });
+      setAdminFormTexts(base);
+    } else {
+      const val = savedData[adminTargetRole];
+      setAdminFormTexts({
+        [adminTargetRole]: (val && val !== "특이사항 없음") ? val : ""
+      });
+      setAdminCurrentInput("");
+      setStagedAdminItems([]);
+      setAdminSharedRoles(new Set());
+    }
+    setAdminModalStage("edit");
+  };
+
+  const formatTextWithGivenDate = (rawText, dateStr) => {
+    const trimmed = (rawText || "").trim();
+    if (!trimmed) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return trimmed;
+      const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
+      if (/^\d{1,2}\s*\([월화수목금토일]\)/.test(trimmed)) return trimmed;
+      return `${dayStr} ${trimmed}`;
+    } catch { return trimmed; }
+  };
+
+  const stageCurrentAdminItem = () => {
+    const trimmed = adminCurrentInput.trim();
+    if (!trimmed) return;
+    const formatted = formatTextWithGivenDate(trimmed, adminTargetDate);
+    const d = new Date(adminTargetDate);
+    const wKey = ymd(startOfWeekMon(d));
+    const sharedArr = Array.from(adminSharedRoles);
+    setStagedAdminItems(prev => [
+      ...prev,
+      {
+        id: `stg_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        date: adminTargetDate,
+        weekKey: wKey,
+        role: adminTargetRole,
+        sharedRoles: sharedArr,
+        content: formatted
+      }
+    ]);
+    setAdminCurrentInput("");
+  };
+
+  const removeStagedItem = (id) => {
+    setStagedAdminItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const saveAdminTexts = async () => {
+    const targetWKey = weekKey;
+    const updatedMap = { ...adminWorkStatus };
+    const curData = { ...(updatedMap[targetWKey] || {}) };
+
+    if (adminTargetRole === 'ALL') {
+      adminRoles.forEach(r => {
+        const text = (adminFormTexts[r] || "").trim();
+        curData[r] = text ? text : "특이사항 없음";
+      });
+      updatedMap[targetWKey] = curData;
+
+      if (supabase) {
+        await supabase.from('admin_status').upsert([{ week_key: targetWKey, data: curData }]);
+      }
+      setAdminWorkStatus(updatedMap);
+      setAdminModalStage(null);
+      return;
+    }
+
+    let itemsToProcess = [...stagedAdminItems];
+    if (adminCurrentInput.trim()) {
+      const formatted = formatTextWithGivenDate(adminCurrentInput.trim(), adminTargetDate);
+      const d = new Date(adminTargetDate);
+      const wKey = ymd(startOfWeekMon(d));
+      const sharedArr = Array.from(adminSharedRoles);
+      itemsToProcess.push({
+        id: 'direct',
+        date: adminTargetDate,
+        weekKey: wKey,
+        role: adminTargetRole,
+        sharedRoles: sharedArr,
+        content: formatted
+      });
+    }
+
+    const directText = (adminFormTexts[adminTargetRole] || "").trim();
+    
+    if (itemsToProcess.length === 0) {
+      curData[adminTargetRole] = directText ? directText : "특이사항 없음";
+    } else {
+      const targetRoles = [adminTargetRole, ...Array.from(adminSharedRoles)];
+      itemsToProcess.forEach(item => {
+        targetRoles.forEach(r => {
+          const oldVal = curData[r] && curData[r] !== "특이사항 없음" ? curData[r].trim() : "";
+          if (oldVal) {
+            if (!oldVal.includes(item.content)) curData[r] = `${oldVal}\n${item.content}`;
+          } else {
+            curData[r] = item.content;
+          }
+        });
+      });
+      if (directText) {
+        curData[adminTargetRole] = directText;
+      }
+    }
+
+    updatedMap[targetWKey] = curData;
+
+    if (supabase) {
+      await supabase.from('admin_status').upsert([{ week_key: targetWKey, data: curData }]);
+    }
+    setAdminWorkStatus(updatedMap);
+    setAdminModalStage(null);
+  };
+
+  const closeAdminModal = () => setAdminModalStage(null);
+
+  const openDeptEdit = () => {
+    setDeptPwInput(""); setDeptPwError(""); setDeptModalStage("password");
+  };
+
+  const submitDeptPassword = () => {
+    if (deptPwInput !== masterPassword) { setDeptPwError("비밀번호가 일치하지 않습니다."); return; }
+    setDeptEditRows(depts.map((d, i) => ({ key: `i${i}`, value: d })));
+    setDeptModalStage("edit");
+  };
+
+  const updateDeptRow = (key, value) => {
+    setDeptEditRows((prev) => prev.map((r) => (r.key === key ? { ...r, value } : r)));
+  };
+  const addDeptRow = () => {
+    setDeptEditRows((prev) => [...prev, { key: `n${Date.now()}`, value: "" }]);
+  };
+  const removeDeptRow = (key) => {
+    setDeptEditRows((prev) => prev.filter((r) => r.key !== key));
+  };
+
+  const saveDeptEdits = async () => {
+    const renameMap = {};
+    depts.forEach((oldName, i) => {
+      const row = deptEditRows.find((r) => r.key === `i${i}`);
+      renameMap[oldName] = row && row.value.trim() ? row.value.trim() : null;
+    });
+    const newDepts = deptEditRows.map((r) => r.value.trim()).filter((v) => v.length > 0);
+    const dedupedNewDepts = Array.from(new Set(newDepts));
+
+    if (supabase) {
+      await supabase.from('depts').delete().neq('id', -1);
+      await supabase.from('depts').insert(dedupedNewDepts.map(name => ({ name })));
+    }
+
+    setEvents((prev) => prev.map((e) => {
+      if (!e.dept) return e;
+      const mapped = Object.prototype.hasOwnProperty.call(renameMap, e.dept) ? renameMap[e.dept] : e.dept;
+      return { ...e, dept: mapped || "" };
+    }));
+
+    setSelectedDepts(new Set(dedupedNewDepts));
+    setDepts(dedupedNewDepts);
+    setDeptModalStage(null);
+  };
+
+  const closeDeptModal = () => setDeptModalStage(null);
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-violet-50 via-white to-white p-4 pb-32 sm:p-6 sm:pb-36">
+      <div className="mx-auto max-w-3xl">
+        {(!supabase) && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-800">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-amber-600">DB 미연동:</span>
+              <span>Supabase Key가 입력되지 않았습니다. 다른 사람과 공유하려면 anon key를 설정해 주세요.</span>
+            </div>
+            <button onClick={() => { setKeyInput(anonKey === DEFAULT_SUPABASE_ANON_KEY ? "" : anonKey); setKeyModalOpen(true); }} className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 font-bold text-white hover:bg-amber-700 transition">
+              <KeyIcon size={14} /> DB 연동 설정
+            </button>
+          </div>
+        )}
+
+        {copiedEvent && (
+          <div className="mb-4 flex items-center justify-between rounded-xl bg-violet-600 px-4 py-2.5 text-white shadow-lg shadow-violet-200">
+            <div className="flex items-center gap-2 text-xs truncate">
+              <span className="rounded bg-violet-800 px-1.5 py-0.5 font-bold shrink-0">복사됨</span>
+              <span className="truncate font-medium">"{copiedEvent.content}" (원하는 날짜의 '+' 버튼을 눌러 붙여넣기하세요)</span>
+            </div>
+            <button onClick={() => setCopiedEvent(null)} className="ml-2 shrink-0 rounded-lg bg-violet-700 px-2 py-0.5 text-xs hover:bg-violet-800">해제</button>
+          </div>
+        )}
+
+        {/* 헤더 */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img src="./logo.png" alt="경연초 교표" className="h-10 w-10 shrink-0 object-contain" />
+            <div>
+              <h1 className="text-lg font-extrabold text-slate-800 sm:text-xl">인천경연초등학교 학사·근무 현황 플래너</h1>
+              <p className="text-xs text-slate-400">학년·부서별 일정과 관리자 근무 현황을 실시간 공유</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {supabase && (
+              <button onClick={() => { setKeyInput(anonKey); setKeyModalOpen(true); }} className="flex items-center gap-1 rounded-xl bg-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition" title="Supabase 실시간 연동 상태입니다">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                실시간 연동 중
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 상단 우측 버튼군 */}
+        <div className="mb-2 flex flex-wrap justify-end gap-1.5">
+          <a
+            href="https://docs.google.com/spreadsheets/d/1n_UUF3b2IOIZcxjGCIvBKonkiYe5z2Zcs2ZyB_VZBiY/edit#gid=504043466"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-2xs"
+            title="경연 현황 구글 시트 바로가기"
+          >
+            <span>경연 현황</span>
+            <ExternalLinkIcon size={11} className="text-emerald-500" />
+          </a>
+          <a
+            href="https://docs.google.com/spreadsheets/d/1OnvmogcwUklmh8LzwAdQA5YQBHpZNFE6GyO1o-gD0mQ/edit#gid=1536539593"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50/70 px-3 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition shadow-2xs"
+            title="에듀브릿지 예약 구글 시트 바로가기"
+          >
+            <span>에듀브릿지 예약</span>
+            <ExternalLinkIcon size={11} className="text-sky-500" />
+          </a>
+          <button
+            onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
+            className="flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-2xs"
+          >
+            <UploadCloudIcon size={13} className="text-indigo-500" />
+            일정 엑셀 업로드
+          </button>
+          <button
+            onClick={openHolidayModal}
+            className="flex items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 transition shadow-2xs"
+          >
+            <span>🏖️</span>
+            재량휴업일 관리
+          </button>
+          <button
+            onClick={openMasterPwModal}
+            className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-violet-600 hover:bg-rose-50 transition shadow-2xs"
+          >
+            <ShieldCheckIcon size={13} className="text-violet-500" />
+            마스터 PW 변경
+          </button>
+        </div>
+
+        {/* 탭 & '출력/저장' 통합 버튼 & 날짜 이동 바 */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+              <button onClick={() => setTab("month")} className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${tab === "month" ? "bg-white text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                <CalendarDaysIcon size={15} /> 월별 일정
+              </button>
+              <button onClick={() => setTab("week")} className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${tab === "week" ? "bg-white text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                <ClipboardListIcon size={15} /> 주간 업무 현황
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button onClick={handlePrint} className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-xs" title="출력 및 엑셀 저장">
+                <PrinterIcon size={14} className="text-violet-500" />
+                <span>출력/저장</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={goPrev} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><ChevronLeft size={18} /></button>
+            <span className="min-w-[90px] text-center text-sm font-bold text-slate-700">{tab === "month" ? monthLabel : weekLabel}</span>
+            <button onClick={goNext} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><ChevronRight size={18} /></button>
+            <button onClick={goToday} className="ml-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50">오늘</button>
+          </div>
+        </div>
+
+        {/* 필터 영역 */}
+        <div className="mb-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <FilterRow label="학년" items={GRADES} selected={selectedGrades} onToggle={(v) => toggleInSet(selectedGrades, setSelectedGrades, v)} onAll={() => setSelectedGrades(new Set(GRADES))} onNone={() => setSelectedGrades(new Set())} />
+          <FilterRow label="담당 부서" items={depts} selected={selectedDepts} onToggle={(v) => toggleInSet(selectedDepts, setSelectedDepts, v)} onAll={() => setSelectedDepts(new Set(depts))} onNone={() => setSelectedDepts(new Set())} editAction={
+            <button onClick={openDeptEdit} title="마스터 권한으로 부서명 수정" className="flex items-center gap-1 rounded-lg bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition">
+              <PencilIcon size={11} /> 부서명 수정
+            </button>
+          } />
+          <p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
+        </div>
+
+        {/* 월 전체 선택 체크박스 및 액션 버튼 바 */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          {tab === "month" && (
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
+                <input
+                  type="checkbox"
+                  checked={isCurrentMonthAllSelected}
+                  onChange={handleToggleSelectCurrentMonth}
+                  className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer"
+                />
+                {viewDate.getMonth() + 1}월 전체 선택
+              </label>
+            </div>
+          )}
+          <div className="ml-auto flex items-center gap-2">
+            {selectedEventIds.size > 0 && (
+              <button
+                onClick={openDeleteModal}
+                className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-100 transition animate-pulse"
+              >
+                <Trash2Icon size={14} /> 선택 삭제 ({selectedEventIds.size})
+              </button>
+            )}
+            <button
+              onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
+              className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
+            >
+              <UploadCloudIcon size={14} /> 엑셀 일괄 업로드
+            </button>
+            <button
+              onClick={() => openAddEvent(tab === "month" ? ymd(today) : ymd(weekDates[0]))}
+              className="flex items-center gap-1 rounded-xl bg-violet-500 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition"
+            >
+              <PlusIcon size={14} /> 일정 추가
+            </button>
+          </div>
+        </div>
+
+        {tab === "month" ? (
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 mb-8">
+            {monthDays.map((d, idx) => {
+              const dStr = ymd(d);
+              const dayEvents = eventsByDate[dStr] || [];
+              const evIds = dayEvents.map(e => e.id);
+              const isDateSelected = evIds.length > 0 && evIds.every(id => selectedEventIds.has(id));
+
+              return (
+                <DateRow
+                  key={dStr}
+                  date={d}
+                  today={today}
+                  events={dayEvents}
+                  isLast={idx === monthDays.length - 1}
+                  onAddEvent={openAddEvent}
+                  onOpenEvent={openEditEvent}
+                  customHolidays={customHolidays}
+                  selectedEventIds={selectedEventIds}
+                  onToggleSelectEvent={handleToggleSelectEvent}
+                  onToggleSelectDate={handleToggleSelectDate}
+                  isDateSelected={isDateSelected}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+              {weekDates.map((d, idx) => {
+                const dStr = ymd(d);
+                const dayEvents = eventsByDate[dStr] || [];
+                const evIds = dayEvents.map(e => e.id);
+                const isDateSelected = evIds.length > 0 && evIds.every(id => selectedEventIds.has(id));
+
+                return (
+                  <DateRow
+                    key={dStr}
+                    date={d}
+                    today={today}
+                    events={dayEvents}
+                    isLast={idx === weekDates.length - 1}
+                    onAddEvent={openAddEvent}
+                    onOpenEvent={openEditEvent}
+                    customHolidays={customHolidays}
+                    selectedEventIds={selectedEventIds}
+                    onToggleSelectEvent={handleToggleSelectEvent}
+                    onToggleSelectDate={handleToggleSelectDate}
+                    isDateSelected={isDateSelected}
+                  />
+                );
+              })}
+            </div>
+
+            {/* 관리자 근무 현황 카드 */}
+            <div className="mt-4 mb-8 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-sm font-extrabold text-slate-700">관리자 근무 현황</h2>
+                  <span className="text-xs font-semibold text-slate-300">{weekLabel}</span>
+                  <button onClick={openAdminRoleEdit} className="ml-1 flex items-center gap-0.5 rounded bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition" title="관리자 직책 명칭 수정">
+                    <PencilIcon size={10} /> 직책명 수정
+                  </button>
+                </div>
+                <button onClick={() => openAdminInput('ALL')} className="flex items-center gap-1 rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition">
+                  <LockIcon size={12} /> 입력
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {adminRoles.map((role) => {
+                  const text = currentWeekTexts[role];
+                  return (
+                    <div key={role} onClick={() => openAdminInput(role)} className="group relative cursor-pointer rounded-xl bg-slate-50 p-3.5 transition hover:bg-violet-50/60 hover:ring-1 hover:ring-violet-300" title={`${role} 근무 현황 입력`}>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <p className="text-xs font-extrabold text-slate-600 group-hover:text-violet-600">{role}</p>
+                        <span className="text-[11px] font-semibold text-violet-400 opacity-0 transition group-hover:opacity-100">수정 ✎</span>
+                      </div>
+                      <p className={`whitespace-pre-wrap text-[13px] leading-snug ${text ? "text-slate-600" : "text-slate-300"}`}>
+                        {text || "특이사항 없음"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 선택 삭제 확인용 비밀번호 인증 모달 */}
+        {deleteModalOpen && (
+          <Modal title="선택 삭제 최종 확인" onClose={() => setDeleteModalOpen(false)}>
+            <p className="mb-3 text-xs text-slate-500 leading-relaxed">
+              선택한 <b>{selectedEventIds.size}개</b>의 일정을 삭제하려면 마스터 비밀번호를 입력해주세요. <span className="text-violet-600 font-bold">(기본: 1234)</span>
+            </p>
+            <FieldLabel>마스터 비밀번호</FieldLabel>
+            <input
+              type="password"
+              autoFocus
+              value={deletePwInput}
+              onChange={(e) => setDeletePwInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && confirmBatchDelete()}
+              className={inputCls}
+              placeholder="비밀번호 입력"
+            />
+            {deletePwError && <p className="mt-2 text-xs font-semibold text-rose-500">{deletePwError}</p>}
+            <div className="mt-4 flex items-center gap-2">
+              <button onClick={() => setDeleteModalOpen(false)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+              <button onClick={confirmBatchDelete} className="flex-1 rounded-xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition shadow-md shadow-rose-200">삭제 확인</button>
+            </div>
+          </Modal>
+        )}
+
+        {/* 1. 엑셀 일괄 업로드 모달 */}
+        {uploadModalOpen && (
+          <Modal title="학사 일정 엑셀(CSV) 일괄 업로드" onClose={() => setUploadModalOpen(false)} wide>
+            <div className="space-y-4">
+              <div className="rounded-xl bg-indigo-50/70 p-3.5 border border-indigo-100 text-xs text-indigo-900 leading-relaxed">
+                <p className="font-bold mb-1">💡 작성 및 업로드 가이드</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-slate-600">
+                  <li>아래 <b>[샘플 양식 다운로드]</b>를 받아 엑셀이나 구글 시트에서 작성합니다.</li>
+                  <li>날짜는 <code>2026-10-01</code> 형식으로 적고, 담당부서/학년/행사내용/담당자를 채웁니다. (관리자 근무는 담당부서에 <code>관리자근무</code>, 비밀번호 칸에 직책 입력)</li>
+                  <li>작성 완료 후 <b>[파일 선택]</b>으로 업로드하고 <b>[DB에 일괄 등록]</b>을 누르면 끝납니다.</li>
+                </ol>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDownloadSampleTemplate}
+                  className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-xs"
+                >
+                  <DownloadIcon size={14} className="text-indigo-500" />
+                  샘플 엑셀 양식 다운로드 (.csv)
+                </button>
+
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".csv, text/csv, .txt"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-sm"
+                  >
+                    <UploadCloudIcon size={14} />
+                    작성한 엑셀 파일 선택
+                  </button>
+                </div>
+              </div>
+
+              {uploadStatus && (
+                <p className={`text-xs font-bold ${uploadParsedEvents.length > 0 ? "text-indigo-600" : "text-rose-500"}`}>
+                  {uploadStatus}
+                </p>
+              )}
+
+              {uploadParsedEvents.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-700 mb-2">업로드 대기 목록 (상위 5개 미리보기)</p>
+                  <div className="max-h-36 overflow-y-auto space-y-1 pr-1 text-xs">
+                    {uploadParsedEvents.slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between rounded bg-white p-1.5 border border-slate-200">
+                        <span className="font-bold text-indigo-600">{item.date}</span>
+                        <span className="text-slate-500 truncate max-w-[200px]">{item.content}</span>
+                        <span className="text-[11px] text-slate-400">[{item.dept || "전체"}]</span>
+                      </div>
+                    ))}
+                    {uploadParsedEvents.length > 5 && (
+                      <p className="text-[11px] text-slate-400 text-center pt-1">... 외 {uploadParsedEvents.length - 5}개의 일정</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setUploadModalOpen(false)}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmUpload}
+                  disabled={uploadParsedEvents.length === 0}
+                  className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-white transition shadow-md ${
+                    uploadParsedEvents.length > 0
+                      ? "bg-violet-600 hover:bg-violet-700 shadow-violet-200"
+                      : "bg-slate-300 cursor-not-allowed"
+                  }`}
+                >
+                  DB에 일괄 등록하기 ({uploadParsedEvents.length}개)
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* 2. 관리자 마스터 비밀번호 변경 모달 */}
+        {masterPwModalOpen && (
+          <Modal title="관리자 마스터 비밀번호 변경" onClose={() => setMasterPwModalOpen(false)}>
+            <p className="mb-3 text-xs text-slate-500 leading-relaxed">
+              부서명 수정 및 관리자 근무 현황 입력 시 사용하는 <b>마스터 인증 비밀번호</b>를 변경합니다. <span className="text-violet-600 font-bold">(초기비밀번호:1234)</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <FieldLabel>현재 마스터 비밀번호</FieldLabel>
+                <input type="password" value={currentPwInput} onChange={(e) => setCurrentPwInput(e.target.value)} className={inputCls} placeholder="현재 비밀번호 입력" />
+              </div>
+              <div>
+                <FieldLabel>새 마스터 비밀번호</FieldLabel>
+                <input type="password" value={newPwInput} onChange={(e) => setNewPwInput(e.target.value)} className={inputCls} placeholder="새 비밀번호 입력" />
+              </div>
+              <div>
+                <FieldLabel>새 마스터 비밀번호 확인</FieldLabel>
+                <input type="password" value={newPwConfirmInput} onChange={(e) => setNewPwConfirmInput(e.target.value)} className={inputCls} placeholder="새 비밀번호 다시 입력" />
+              </div>
+
+              {masterPwError && <p className="text-xs font-semibold text-rose-500">{masterPwError}</p>}
+              {masterPwSuccess && <p className="text-xs font-semibold text-emerald-600">{masterPwSuccess}</p>}
+
+              <div className="flex items-center gap-2 pt-2">
+                <button onClick={() => setMasterPwModalOpen(false)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+                <button onClick={handleSaveMasterPassword} className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-bold text-white hover:bg-violet-700 transition shadow-md shadow-violet-200">비밀번호 변경</button>
+              </div>
+
+              <div className="pt-2">
+                <button onClick={handleResetMasterPassword} className="w-full rounded-xl border border-rose-100 bg-rose-50/70 py-2 text-xs font-bold text-rose-500 hover:bg-rose-100 transition">비밀번호 초기화</button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* 2-1. 관리자 직책명 수정 인증 모달 */}
+        {adminRoleModalStage === "password" && (
+          <Modal title="관리자 직책명 수정 인증" onClose={() => setAdminRoleModalStage(null)}>
+            <FieldLabel>마스터 비밀번호</FieldLabel>
+            <input type="password" autoFocus value={adminRolePwInput} onChange={(e) => setAdminRolePwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitAdminRolePassword()} className={inputCls} placeholder="마스터 비밀번호 입력" />
+            {adminRolePwError && <p className="mt-2 text-xs font-semibold text-rose-500">{adminRolePwError}</p>}
+            <button onClick={submitAdminRolePassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
+          </Modal>
+        )}
+
+        {/* 2-2. 관리자 직책명 편집 모달 */}
+        {adminRoleModalStage === "edit" && (
+          <Modal title="관리자 직책 명칭 수정" onClose={() => setAdminRoleModalStage(null)} wide>
+            <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+              {adminRoleEditRows.map((row) => (
+                <div key={row.key} className="flex items-center gap-2">
+                  <input type="text" value={row.value} onChange={(e) => updateAdminRoleRow(row.key, e.target.value)} className={inputCls} placeholder="직책명" />
+                  <button onClick={() => setAdminRoleEditRows(prev => prev.filter(r => r.key !== row.key))} title="이 직책 삭제" className="shrink-0 rounded-lg p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition"><XIcon size={16} /></button>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setAdminRoleEditRows(prev => [...prev, { key: `r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
+            <div className="mt-4 flex items-center gap-2">
+              <button onClick={() => setAdminRoleModalStage(null)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+              <button onClick={saveAdminRoleEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장</button>
+            </div>
+          </Modal>
+        )}
+
+        {/* 3. 재량휴업일 관리 모달 */}
+        {holidayModalStage === "password" && (
+          <Modal title="재량휴업일 관리 인증" onClose={() => setHolidayModalStage(null)}>
+            <FieldLabel>마스터 비밀번호</FieldLabel>
+            <input type="password" autoFocus value={holidayPwInput} onChange={(e) => setHolidayPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitHolidayPassword()} className={inputCls} placeholder="마스터 비밀번호 입력" />
+            {holidayPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{holidayPwError}</p>}
+            <button onClick={submitHolidayPassword} className="mt-4 w-full rounded-xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition">확인</button>
+          </Modal>
+        )}
+
+        {holidayModalStage === "edit" && (
+          <Modal title="학교 재량휴업일 및 휴일 관리" onClose={() => setHolidayModalStage(null)} wide>
+            <div className="space-y-4">
+              <div className="rounded-xl bg-rose-50/60 p-3 border border-rose-100">
+                <p className="text-xs font-bold text-rose-700 mb-2">새 재량휴업일 등록</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input type="date" value={newHolDate} onChange={(e) => setNewHolDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400" />
+                  <input type="text" value={newHolName} onChange={(e) => setNewHolName(e.target.value)} placeholder="휴일 명칭 (예: 개교기념일)" className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400" />
+                  <button onClick={addCustomHoliday} className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-600 transition shrink-0">추가</button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-500 mb-2">등록된 재량휴업일 목록</p>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                  {Object.keys(customHolidays).length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2 text-center">등록된 재량휴업일이 없습니다.</p>
+                  ) : (
+                    Object.entries(customHolidays).map(([dStr, name]) => (
+                      <div key={dStr} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-700">{dStr}</span>
+                          <span className="rounded bg-rose-100 text-rose-600 px-2 py-0.5 font-bold text-[11px]">{name}</span>
+                        </div>
+                        <button onClick={() => removeCustomHoliday(dStr)} className="text-slate-400 hover:text-rose-500 transition p-1" title="삭제"><XIcon size={14} /></button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="pt-2">
+                <button onClick={() => setHolidayModalStage(null)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">닫기</button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* 4. Supabase Key 모달 */}
+        {keyModalOpen && (
+          <Modal title="Supabase API Anon Key 설정" onClose={() => setKeyModalOpen(false)} wide>
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500 leading-relaxed">Supabase 대시보드 ➔ <b>Project Settings</b> ➔ <b>API</b> 메뉴에서 복사한 <b>anon (public)</b> 키를 아래에 입력해주세요.</p>
+              <div>
+                <FieldLabel>Anon Key</FieldLabel>
+                <textarea rows={4} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} className={inputCls} placeholder="eyJhbGciOiJKV1QiLC..." />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <button onClick={() => setKeyModalOpen(false)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+                <button onClick={handleSaveKey} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장 및 연동</button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* 5. 일정 추가/수정 모달 */}
+        {eventModal && (
+          <Modal title={eventModal.mode === "add" ? "일정 추가" : "일정 수정"} onClose={closeEventModal} wide>
+            <div className="space-y-3">
+              <div>
+                <FieldLabel>날짜</FieldLabel>
+                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>담당 부서</FieldLabel>
+                  <select value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} className={inputCls}>
+                    <option value="">미지정</option>
+                    {depts.map((d) => ( <option key={d} value={d}>{d}</option> ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel>학년 / 구분</FieldLabel>
+                  <select value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} className={inputCls}>
+                    <option value="">미지정</option>
+                    {GRADES.map((g) => ( <option key={g} value={g}>{g}</option> ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <FieldLabel>행사 내용</FieldLabel>
+                <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 유초이음 음악줄넘기(1교시~3교시, 필로티)" />
+              </div>
+              <div>
+                <FieldLabel>담당자 (선택)</FieldLabel>
+                <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
+              </div>
+              {eventModal.mode === "add" ? (
+                <div>
+                  <FieldLabel>비밀번호 (수정/삭제 시 사용할 숫자 4자리)</FieldLabel>
+                  <input type="password" inputMode="numeric" maxLength={4} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value.replace(/\D/g, "").slice(0, 4) })} className={inputCls} placeholder="숫자 4자리" />
+                </div>
+              ) : (
+                <div>
+                  <FieldLabel>비밀번호 (등록 비밀번호 또는 마스터 PW)</FieldLabel>
+                  <input type="password" value={pwCheckInput} onChange={(e) => setPwCheckInput(e.target.value)} className={inputCls} placeholder="비밀번호 입력" />
+                </div>
+              )}
+              {pwCheckError && <p className="text-xs font-semibold text-rose-500">{pwCheckError}</p>}
+              <div className="flex items-center gap-2 pt-1">
+                {eventModal.mode === "edit" && (
+                  <>
+                    <button onClick={deleteEvent} className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-100 transition" title="일정 삭제"><Trash2Icon size={15} /> 삭제</button>
+                    <button onClick={copyCurrentEvent} className="flex items-center gap-1 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm font-bold text-violet-600 hover:bg-violet-100 transition" title="복사"><CopyIcon size={15} /> 복사</button>
+                  </>
+                )}
+                <button onClick={closeEventModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+                <button onClick={saveEvent} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">{eventModal.mode === "add" ? "추가" : "수정"}</button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* 6. 관리자 근무 현황 인증 모달 */}
+        {adminModalStage === "password" && (
+          <Modal title="관리자 인증" onClose={closeAdminModal}>
+            <FieldLabel>마스터 비밀번호</FieldLabel>
+            <input type="password" autoFocus value={adminPwInput} onChange={(e) => setAdminPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitAdminPassword()} className={inputCls} placeholder="비밀번호를 입력하세요" />
+            {adminPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{adminPwError}</p>}
+            <button onClick={submitAdminPassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
+            <p className="mt-2 text-center text-[11px] text-slate-300">기본 마스터 비밀번호: {MASTER_PASSWORD_DEFAULT}</p>
+          </Modal>
+        )}
+
+        {/* 7. 관리자 근무 현황 작성 및 수정 모달 */}
+        {adminModalStage === "edit" && (
+          <Modal title={adminTargetRole && adminTargetRole !== 'ALL' ? `${adminTargetRole} 근무 현황 작성 및 수정` : `관리자 근무 현황 일괄 작성`} onClose={closeAdminModal} wide>
+            {adminTargetRole && adminTargetRole !== 'ALL' ? (
+              <div className="space-y-3.5">
+                <div className="rounded-xl bg-violet-50/70 p-3 border border-violet-100 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <FieldLabel>기준 날짜 (필수: 해당 일자 비고란에 자동 매칭됩니다)</FieldLabel>
+                      <input type="date" value={adminTargetDate} onChange={(e) => setAdminTargetDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-400" />
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[11px] font-bold text-slate-400 block">적용 주간</span>
+                      <span className="text-xs font-extrabold text-violet-600">{modalWeekCalculated.label} {modalWeekCalculated.dayStr && `[${modalWeekCalculated.dayStr}]`}</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-violet-200/60">
+                    <p className="text-[11px] font-bold text-violet-700 mb-1.5">동행 관리자 함께 등록 (선택 시 2명 이상에게 동시에 입력됩니다)</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {adminRoles.filter(r => r !== adminTargetRole).map((r) => {
+                        const isChecked = adminSharedRoles.has(r);
+                        return (
+                          <button key={r} type="button" onClick={() => toggleInSet(adminSharedRoles, setAdminSharedRoles, r)} className={`rounded-lg px-2.5 py-1 text-xs font-bold border transition ${isChecked ? "bg-violet-600 text-white border-violet-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-violet-50"}`}>
+                            {isChecked ? `✓ ${r}` : `+ ${r}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>{adminTargetRole} 근무 일정 내용 (수정 및 추가)</FieldLabel>
+                  <textarea value={adminCurrentInput} onChange={(e) => setAdminCurrentInput(e.target.value)} rows={3} className={inputCls} placeholder="예) 14:00~16:00 교장단 회의" />
+                  <div className="mt-2 flex justify-end">
+                    <button type="button" onClick={stageCurrentAdminItem} disabled={!adminCurrentInput.trim()} className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm ${adminCurrentInput.trim() ? "bg-violet-100 text-violet-700 hover:bg-violet-200 border border-violet-200" : "bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed"}`}>
+                      <PlusIcon size={13} /> 임시 추가 (다른 날짜 계속 담기)
+                    </button>
+                  </div>
+                </div>
+
+                {stagedAdminItems.length > 0 && (
+                  <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-3">
+                    <p className="text-xs font-bold text-violet-800 mb-2 flex items-center justify-between">
+                      <span>함께 저장될 스케줄 목록 ({stagedAdminItems.length}개)</span>
+                    </p>
+                    <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                      {stagedAdminItems.map((item) => (
+                        <div key={item.id} className="flex items-start justify-between rounded-lg bg-white p-2 text-xs border border-violet-100 shadow-2xs">
+                          <div className="min-w-0 flex-1 pr-2">
+                            <p className="font-bold text-slate-700">{item.content}</p>
+                            {item.sharedRoles.length > 0 && (
+                              <p className="text-[10px] text-violet-600 font-semibold mt-0.5">동행: {item.sharedRoles.join(", ")}</p>
+                            )}
+                          </div>
+                          <button type="button" onClick={() => removeStagedItem(item.id)} className="text-slate-300 hover:text-rose-500 p-0.5 transition shrink-0" title="삭제"><XIcon size={14} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <FieldLabel>현재 저장된 전체 내용 직접 편집 및 삭제</FieldLabel>
+                  <textarea
+                    value={adminFormTexts[adminTargetRole] || ""}
+                    onChange={(e) => setAdminFormTexts({ ...adminFormTexts, [adminTargetRole]: e.target.value })}
+                    rows={3}
+                    className={inputCls}
+                    placeholder="기존 내역 직접 수정 또는 전체 지우기 가능"
+                  />
+                  <div className="mt-1 flex justify-end">
+                    <button type="button" onClick={() => setAdminFormTexts({ ...adminFormTexts, [adminTargetRole]: "" })} className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition">
+                      <Trash2Icon size={12} /> 내용 전체 지우기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+                {adminRoles.map((role) => (
+                  <div key={role}>
+                    <FieldLabel>{role}</FieldLabel>
+                    <textarea value={adminFormTexts[role] || ""} onChange={(e) => setAdminFormTexts({ ...adminFormTexts, [role]: e.target.value })} rows={2} className={inputCls} placeholder="예) 28(금) 출장" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center gap-2">
+              <button onClick={closeAdminModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+              <button onClick={saveAdminTexts} className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-bold text-white hover:bg-violet-700 transition shadow-md shadow-violet-200">
+                {stagedAdminItems.length > 0 ? `일괄 저장 (${stagedAdminItems.length + (adminCurrentInput.trim() ? 1 : 0)}개)` : "저장 완료"}
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {/* 8. 부서명 수정 인증 모달 */}
+        {deptModalStage === "password" && (
+          <Modal title="마스터 인증" onClose={closeDeptModal}>
+            <FieldLabel>마스터 비밀번호</FieldLabel>
+            <input type="password" autoFocus value={deptPwInput} onChange={(e) => setDeptPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitDeptPassword()} className={inputCls} placeholder="비밀번호를 입력하세요" />
+            {deptPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{deptPwError}</p>}
+            <button onClick={submitDeptPassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
+            <p className="mt-2 text-center text-[11px] text-slate-300">기본 마스터 비밀번호: {MASTER_PASSWORD_DEFAULT}</p>
+          </Modal>
+        )}
+
+        {/* 9. 부서명 수정 편집 모달 */}
+        {deptModalStage === "edit" && (
+          <Modal title="담당 부서명 수정" onClose={closeDeptModal} wide>
+            <div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
+              {deptEditRows.map((row) => (
+                <div key={row.key} className="flex items-center gap-2">
+                  <input type="text" value={row.value} onChange={(e) => updateDeptRow(row.key, e.target.value)} className={inputCls} placeholder="부서명" />
+                  <button onClick={() => removeDeptRow(row.key)} title="이 부서 삭제" className="shrink-0 rounded-lg p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition"><XIcon size={16} /></button>
+                </div>
+              ))}
+            </div>
+            <button onClick={addDeptRow} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
+            <p className="mt-2 text-[11px] text-slate-400">* 부서명을 삭제하면 해당 부서로 등록된 일정은 '미지정'으로 변경됩니다.</p>
+            <div className="mt-4 flex items-center gap-2">
+              <button onClick={closeDeptModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
+              <button onClick={saveDeptEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저장</button>
+            </div>
+          </Modal>
+        )}
+      </div>
+    </div>
+  );
 }
-setPwCheckInput("");
-setPwCheckError("");
-setEventModal({ mode: "add" });
-};
-const openEditEvent = (ev) => {
-setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, content: ev.content,
-manager: ev.manager || "", password: ev.password });
-setPwCheckInput("");
-setPwCheckError("");
-setEventModal({ mode: "edit", data: ev });
-};
-const copyCurrentEvent = () => {
-if (! form.content.trim()) return;
-setCopiedEvent({ dept: form.dept, grade: form.grade, content: form.content,
-manager: form.manager, password: form.password });
-closeEventModal();
-};
-const closeEventModal = () => setEventModal(null);
-const isValidPw = (v) => /^\d{4}$/.test(v);
-const saveEvent = async () => {
-if (! form.content.trim()) return;
-if (eventModal.mode === "add") {
-if (! isValidPw(form.password)) {
-setPwCheckError("비밀번호는 숫자 4자리로 설정해 주세요.");
-return;
-}
-const numericId = Math.floor(Date.now() % 2147483647);
-const newEv = { id: numericId, ...form };
-if (supabase) {
-const { error } = await supabase.from('events').insert([newEv]);
-if (error) { setPwCheckError("DB 저장 실패: " + error.message); return; }
-}
-setEvents((prev) => [...prev, newEv]);
 
-closeEventModal();
-} else {
-if (pwCheckInput !== eventModal.data.password && pwCheckInput !==
-masterPassword) {
-setPwCheckError("비밀번호가 일치하지 않습니다.");
-return;
-}
-if (supabase) {
-const { error } = await supabase.from('events').update(form).eq('id',
-eventModal.data.id);
-if (error) { setPwCheckError("DB 수정 실패: " + error.message); return; }
-}
-setEvents((prev) => prev.map((e) => (e.id === eventModal.data.id ? { ...e,
-...form } : e)));
-closeEventModal();
-}
-};
-const deleteEvent = async () => {
-if (pwCheckInput !== eventModal.data.password && pwCheckInput !==
-masterPassword) {
-setPwCheckError("비밀번호가 일치하지 않습니다.");
-return;
-}
-if (supabase) {
-const { error } = await supabase.from('events').delete().eq('id',
-eventModal.data.id);
-if (error) { setPwCheckError("DB 삭제 실패: " + error.message); return; }
-}
-setEvents((prev) => prev.filter((e) => e.id !== eventModal.data.id));
-closeEventModal();
-};
-const openMasterPwModal = () => {
-setCurrentPwInput(""); setNewPwInput(""); setNewPwConfirmInput("");
-setMasterPwError(""); setMasterPwSuccess("");
-setMasterPwModalOpen(true);
-};
-const handleSaveMasterPassword = () => {
-setMasterPwError(""); setMasterPwSuccess("");
-
-if (currentPwInput !== masterPassword) { setMasterPwError("현재 마스터 비밀번호 가 일치하지 않습니다."); return; }
-if (! newPwInput.trim()) { setMasterPwError("새 비밀번호를 입력해주세요."); return; }
-if (newPwInput !== newPwConfirmInput) { setMasterPwError("새 비밀번호가 일치하 지 않습니다."); return; }
-const cleanPw = newPwInput.trim();
-localStorage.setItem("sp_master_pw", cleanPw);
-setMasterPassword(cleanPw);
-setMasterPwSuccess("마스터 비밀번호가 성공적으로 변경되었습니다.");
-setTimeout(() => { setMasterPwModalOpen(false); }, 1200);
-};
-const handleResetMasterPassword = () => {
-if (window.confirm("마스터 비밀번호를 초기값(1234)으로 리셋하시겠습니까?")) {
-localStorage.setItem("sp_master_pw", MASTER_PASSWORD_DEFAULT);
-setMasterPassword(MASTER_PASSWORD_DEFAULT);
-setMasterPwSuccess("마스터 비밀번호가 초기값(1234)으로 리셋되었습니다.");
-setTimeout(() => { setMasterPwModalOpen(false); }, 1200);
-}
-};
-const openHolidayModal = () => {
-setHolidayPwInput(""); setHolidayPwError(""); setHolidayModalStage("password");
-};
-const submitHolidayPassword = () => {
-if (holidayPwInput !== masterPassword) { setHolidayPwError("비밀번호가 일치하지 않습니다."); return; }
-setHolidayModalStage("edit");
-};
-const addCustomHoliday = async () => {
-if (! newHolDate || ! newHolName.trim()) return;
-const updated = { ...customHolidays, [newHolDate]: newHolName.trim() };
-setCustomHolidays(updated);
-localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
-if (supabase) {
-await supabase.from('admin_status').upsert([{ week_key:
-'custom_holidays_data', data: updated }]);
-}
-};
-
-const removeCustomHoliday = async (dateKey) => {
-const updated = { ...customHolidays };
-delete updated[dateKey];
-setCustomHolidays(updated);
-localStorage.setItem("sp_custom_holidays", JSON.stringify(updated));
-if (supabase) {
-await supabase.from('admin_status').upsert([{ week_key:
-'custom_holidays_data', data: updated }]);
-}
-};
-const openAdminInput = (role = 'ALL') => {
-setAdminTargetRole(role);
-setAdminTargetDate(tab === "week" ? ymd(weekStart) : ymd(today));
-setAdminSharedRoles(new Set());
-setAdminCurrentInput("");
-setStagedAdminItems([]);
-setAdminPwInput("");
-setAdminPwError("");
-setAdminModalStage("password");
-};
-const submitAdminPassword = () => {
-if (adminPwInput !== masterPassword) { setAdminPwError("비밀번호가 일치하지 않 습니다."); return; }
-const targetWKey = weekKey;
-const savedData = adminWorkStatus[targetWKey] || {};
-if (adminTargetRole === 'ALL') {
-const base = {};
-adminRoles.forEach((r) => {
-const val = savedData[r];
-base[r] = (val && val !== "특이사항 없음") ? val : "";
-});
-setAdminFormTexts(base);
-} else {
-const val = savedData[adminTargetRole];
-setAdminFormTexts({
-[adminTargetRole]: (val && val !== "특이사항 없음") ? val : ""
-});
-
-setAdminCurrentInput("");
-setStagedAdminItems([]);
-setAdminSharedRoles(new Set());
-}
-setAdminModalStage("edit");
-};
-const formatTextWithGivenDate = (rawText, dateStr) => {
-const trimmed = (rawText || "").trim();
-if (! trimmed) return "";
-try {
-const d = new Date(dateStr);
-if (isNaN(d.getTime())) return trimmed;
-const dayStr = `${d.getDate()}(${WEEKDAY_KOR[d.getDay()]})`;
-if (/^\d{1,2}\s*\([월화수목금토일]\)/.test(trimmed)) return trimmed;
-return `${dayStr} ${trimmed}`;
-} catch { return trimmed; }
-};
-const stageCurrentAdminItem = () => {
-const trimmed = adminCurrentInput.trim();
-if (! trimmed) return;
-const formatted = formatTextWithGivenDate(trimmed, adminTargetDate);
-const d = new Date(adminTargetDate);
-const wKey = ymd(startOfWeekMon(d));
-const sharedArr = Array.from(adminSharedRoles);
-setStagedAdminItems(prev => [
-...prev,
-{
-id: `stg_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-date: adminTargetDate,
-weekKey: wKey,
-role: adminTargetRole,
-sharedRoles: sharedArr,
-content: formatted
-}
-]);
-setAdminCurrentInput("");
-};
-const removeStagedItem = (id) => {
-
-setStagedAdminItems(prev => prev.filter(item => item.id !== id));
-};
-const saveAdminTexts = async () => {
-const targetWKey = weekKey;
-const updatedMap = { ...adminWorkStatus };
-const curData = { ...(updatedMap[targetWKey] || {}) };
-if (adminTargetRole === 'ALL') {
-adminRoles.forEach(r => {
-const text = (adminFormTexts[r] || "").trim();
-curData[r] = text ? text : "특이사항 없음";
-});
-updatedMap[targetWKey] = curData;
-if (supabase) {
-await supabase.from('admin_status').upsert([{ week_key: targetWKey, data:
-curData }]);
-}
-setAdminWorkStatus(updatedMap);
-setAdminModalStage(null);
-return;
-}
-let itemsToProcess = [...stagedAdminItems];
-if (adminCurrentInput.trim()) {
-const formatted = formatTextWithGivenDate(adminCurrentInput.trim(),
-adminTargetDate);
-const d = new Date(adminTargetDate);
-const wKey = ymd(startOfWeekMon(d));
-const sharedArr = Array.from(adminSharedRoles);
-itemsToProcess.push({
-id: 'direct',
-date: adminTargetDate,
-weekKey: wKey,
-role: adminTargetRole,
-sharedRoles: sharedArr,
-content: formatted
-});
-}
-
-const directText = (adminFormTexts[adminTargetRole] || "").trim();
-if (itemsToProcess.length === 0) {
-curData[adminTargetRole] = directText ? directText : "특이사항 없음";
-} else {
-const targetRoles = [adminTargetRole, ...Array.from(adminSharedRoles)];
-itemsToProcess.forEach(item => {
-targetRoles.forEach(r => {
-const oldVal = curData[r] && curData[r] !== "특이사항 없음" ?
-curData[r].trim() : "";
-if (oldVal) {
-if (! oldVal.includes(item.content)) curData[r] =
-`${oldVal}\n${item.content}`;
-} else {
-curData[r] = item.content;
-}
-});
-});
-if (directText) {
-curData[adminTargetRole] = directText;
-}
-}
-updatedMap[targetWKey] = curData;
-if (supabase) {
-await supabase.from('admin_status').upsert([{ week_key: targetWKey, data:
-curData }]);
-}
-setAdminWorkStatus(updatedMap);
-setAdminModalStage(null);
-};
-const closeAdminModal = () => setAdminModalStage(null);
-const openDeptEdit = () => {
-setDeptPwInput(""); setDeptPwError(""); setDeptModalStage("password");
-};
-const submitDeptPassword = () => {
-if (deptPwInput !== masterPassword) { setDeptPwError("비밀번호가 일치하지 않습니  다."); return; }
-setDeptEditRows(depts.map((d, i) => ({ key: `i${i}`, value: d })));
-setDeptModalStage("edit");
-};
-const updateDeptRow = (key, value) => {
-setDeptEditRows((prev) => prev.map((r) => (r.key === key ? { ...r, value } : r)));
-};
-const addDeptRow = () => {
-setDeptEditRows((prev) => [...prev, { key: `n${Date.now()}`, value: "" }]);
-};
-const removeDeptRow = (key) => {
-setDeptEditRows((prev) => prev.filter((r) => r.key !== key));
-};
-const saveDeptEdits = async () => {
-const renameMap = {};
-depts.forEach((oldName, i) => {
-const row = deptEditRows.find((r) => r.key === `i${i}`);
-renameMap[oldName] = row && row.value.trim() ? row.value.trim() : null;
-});
-const newDepts = deptEditRows.map((r) => r.value.trim()).filter((v) => v.length >
-0);
-const dedupedNewDepts = Array.from(new Set(newDepts));
-if (supabase) {
-await supabase.from('depts').delete().neq('id', -1);
-await supabase.from('depts').insert(dedupedNewDepts.map(name => ({ name
-})));
-}
-setEvents((prev) => prev.map((e) => {
-if (! e.dept) return e;
-const mapped = Object.prototype.hasOwnProperty.call(renameMap, e.dept) ?
-renameMap[e.dept] : e.dept;
-return { ...e, dept: mapped || "" };
-}));
-setSelectedDepts(new Set(dedupedNewDepts));
-setDepts(dedupedNewDepts);
-setDeptModalStage(null);
-
-};
-const closeDeptModal = () => setDeptModalStage(null);
-return (
-<div className="min-h-screen w-full bg-gradient-to-b from-violet-50 via-white to-white p-4 pb-32 sm:p-6 sm:pb-36">
-<div className="mx-auto max-w-3xl">
-{(! supabase) && (
-<div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-amber-50 p-3.5 border border-amber-200 text-xs text-amber-800">
-<div className="flex items-center gap-2">
-<span className="font-bold text-amber-600">DB 미연동:</span>
-<span>Supabase Key가 입력되지 않았습니다. 다른 사람과 공유하려면 anon
-key를 설정해 주세요.</span>
-</div>
-<button onClick={() => { setKeyInput(anonKey ===
-DEFAULT_SUPABASE_ANON_KEY ? "" : anonKey); setKeyModalOpen(true); }}
-className="flex items-center gap-1 rounded-lg bg-amber-600 px-3 py-1.5 font-bold text-white hover:bg-amber-700 transition">
-<KeyIcon size={14} /> DB 연동 설정
-</button>
-</div>
-)}
-{copiedEvent && (
-<div className="mb-4 flex items-center justify-between rounded-xl bg-violet-600 px-4 py-2.5 text-white shadow-lg shadow-violet-200">
-<div className="flex items-center gap-2 text-xs truncate">
-<span className="rounded bg-violet-800 px-1.5 py-0.5 font-bold shrink-0">복사됨</span>
-<span className="truncate font-medium">"{copiedEvent.content}" (원하
-는 날짜의 '+' 버튼을 눌러 붙여넣기하세요)</span>
-</div>
-<button onClick={() => setCopiedEvent(null)} className="ml-2 shrink-0 rounded-lg bg-violet-700 px-2 py-0.5 text-xs hover:bg-violet-800">해제</button>
-</div>
-)}
-{/* 헤더 */}
-<div className="mb-4 flex items-center justify-between">
-
-<div className="flex items-center gap-2.5">
-<img src="./logo.png" alt="경연초 교표" className="h-10 w-10 shrink-0 object-contain" />
-<div>
-<h1 className="text-lg font-extrabold text-slate-800 sm:text-xl">인천경
-연초등학교 학사·근무 현황 플래너</h1>
-<p className="text-xs text-slate-400">학년·부서별 일정과 관리자 근무 현
-황을 실시간 공유</p>
-</div>
-</div>
-<div className="flex items-center gap-2">
-{supabase && (
-<button onClick={() => { setKeyInput(anonKey); setKeyModalOpen(true);
-}} className="flex items-center gap-1 rounded-xl bg-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition" title="Supabase 실시간 연동 상태입니다">
-<span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-실시간 연동 중
-</button>
-)}
-</div>
-</div>
-{/* 상단 우측 버튼군 */}
-<div className="mb-2 flex flex-wrap justify-end gap-1.5">
-<a
-href="https://docs.google.com/spreadsheets/d/1n_UUF3b2IOIZcxjGCIvBKonkiYe5z2Zcs 2ZyB_VZBiY/edit#gid=504043466"
-target="_blank"
-rel="noopener noreferrer"
-className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition shadow-2xs"
-title="경연 현황 구글 시트 바로가기"
->
-<span>경연 현황</span>
-<ExternalLinkIcon size={11} className="text-emerald-500" />
-</a>
-<a
-
-href="https://docs.google.com/spreadsheets/d/1OnvmogcwUklmh8LzwAdQA5YQBHpZ NFE6GyO1o-gD0mQ/edit#gid=1536539593"
-target="_blank"
-rel="noopener noreferrer"
-className="flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50/70 px-3 py-1 text-xs font-bold text-sky-700 hover:bg-sky-100 transition shadow-2xs"
-title="에듀브릿지 예약 구글 시트 바로가기"
->
-<span>에듀브릿지 예약</span>
-<ExternalLinkIcon size={11} className="text-sky-500" />
-</a>
-<button
-onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]);
-setUploadStatus(""); }}
-className="flex items-center gap-1 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-2xs"
->
-<UploadCloudIcon size={13} className="text-indigo-500" />
-일정 엑셀 업로드
-</button>
-<button
-onClick={openHolidayModal}
-className="flex items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 transition shadow-2xs"
->
-<span></span>
-재량휴업일 관리
-</button>
-<button
-onClick={openMasterPwModal}
-className="flex items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-violet-600 hover:bg-rose-50 transition shadow-2xs"
->
-<ShieldCheckIcon size={13} className="text-violet-500" />
-마스터 PW 변경
-</button>
-
-</div>
-{/* 탭 & '출력/저장' 통합 버튼 & 날짜 이동 바 */}
-<div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
-<div className="flex flex-wrap items-center gap-2">
-<div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-<button onClick={() => setTab("month")} className={`flex items-center
-gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${tab === "month" ?
-"bg-white text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-<CalendarDaysIcon size={15} /> 월별 일정
-</button>
-<button onClick={() => setTab("week")} className={`flex items-center
-gap-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${tab === "week" ?
-"bg-white text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-<ClipboardListIcon size={15} /> 주간 업무 현황
-</button>
-</div>
-<div className="flex items-center gap-1">
-<button onClick={handlePrint} className="flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 transition shadow-xs" title="출력 및 엑셀 저장">
-<PrinterIcon size={14} className="text-violet-500" />
-<span>출력/저장</span>
-</button>
-</div>
-</div>
-<div className="flex items-center gap-2">
-<button onClick={goPrev} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><ChevronLeft size={18} /></button>
-<span className="min-w-[90px] text-center text-sm font-bold text-slate-700">{tab === "month" ? monthLabel : weekLabel}</span>
-<button onClick={goNext} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"><ChevronRight size={18} /></button>
-<button onClick={goToday} className="ml-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50">오늘</button>
-</div>
-</div>
-
-{/* 필터 영역 */}
-<div className="mb-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-<FilterRow label="학년" items={GRADES} selected={selectedGrades}
-onToggle={(v) => toggleInSet(selectedGrades, setSelectedGrades, v)} onAll={() =>
-setSelectedGrades(new Set(GRADES))} onNone={() => setSelectedGrades(new Set())} />
-<FilterRow label="담당 부서" items={depts} selected={selectedDepts}
-onToggle={(v) => toggleInSet(selectedDepts, setSelectedDepts, v)} onAll={() =>
-setSelectedDepts(new Set(depts))} onNone={() => setSelectedDepts(new Set())}
-editAction={
-<button onClick={openDeptEdit} title="마스터 권한으로 부서명 수정"
-className="flex items-center gap-1 rounded-lg bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition">
-<PencilIcon size={11} /> 부서명 수정
-</button>
-} />
-<p className="text-[11px] text-slate-400">* 학년/부서가 미지정인 일정은 필
-터와 관계없이 항상 표시됩니다.</p>
-</div>
-{/* 월 전체 선택 체크박스 및 액션 버튼 바 */}
-<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-{tab === "month" && (
-<div className="flex items-center gap-2">
-<label className="flex items-center gap-1.5 cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition">
-<input
-type="checkbox"
-checked={isCurrentMonthAllSelected}
-onChange={handleToggleSelectCurrentMonth}
-className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-400 cursor-pointer"
-/>
-{viewDate.getMonth() + 1}월 전체 선택
-</label>
-</div>
-)}
-<div className="ml-auto flex items-center gap-2">
-{selectedEventIds.size > 0 && (
-
-<button
-onClick={openDeleteModal}
-className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-100 transition animate-pulse"
->
-<Trash2Icon size={14} /> 선택 삭제 ({selectedEventIds.size})
-</button>
-)}
-<button
-onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]);
-setUploadStatus(""); }}
-className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
->
-<UploadCloudIcon size={14} /> 엑셀 일괄 업로드
-</button>
-<button
-onClick={() => openAddEvent(tab === "month" ? ymd(today) :
-ymd(weekDates[0]))}
-className="flex items-center gap-1 rounded-xl bg-violet-500 px-3 py-2 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition"
->
-<PlusIcon size={14} /> 일정 추가
-</button>
-</div>
-</div>
-{tab === "month" ? (
-<div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 mb-8">
-{monthDays.map((d, idx) => {
-const dStr = ymd(d);
-const dayEvents = eventsByDate[dStr] || [];
-const evIds = dayEvents.map(e => e.id);
-const isDateSelected = evIds.length > 0 && evIds.every(id =>
-selectedEventIds.has(id));
-return (
-
-<DateRow
-key={dStr}
-date={d}
-today={today}
-events={dayEvents}
-isLast={idx === monthDays.length - 1}
-onAddEvent={openAddEvent}
-onOpenEvent={openEditEvent}
-customHolidays={customHolidays}
-selectedEventIds={selectedEventIds}
-onToggleSelectEvent={handleToggleSelectEvent}
-onToggleSelectDate={handleToggleSelectDate}
-isDateSelected={isDateSelected}
-/>
-);
-})}
-</div>
-) : (
-<>
-<div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
-{weekDates.map((d, idx) => {
-const dStr = ymd(d);
-const dayEvents = eventsByDate[dStr] || [];
-const evIds = dayEvents.map(e => e.id);
-const isDateSelected = evIds.length > 0 && evIds.every(id =>
-selectedEventIds.has(id));
-return (
-<DateRow
-key={dStr}
-date={d}
-today={today}
-events={dayEvents}
-isLast={idx === weekDates.length - 1}
-onAddEvent={openAddEvent}
-onOpenEvent={openEditEvent}
-customHolidays={customHolidays}
-selectedEventIds={selectedEventIds}
-onToggleSelectEvent={handleToggleSelectEvent}
-onToggleSelectDate={handleToggleSelectDate}
-
-isDateSelected={isDateSelected}
-/>
-);
-})}
-</div>
-{/* 관리자 근무 현황 카드 */}
-<div className="mt-4 mb-8 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-<div className="flex items-center gap-1.5">
-<h2 className="text-sm font-extrabold text-slate-700">관리자 근무
-현황</h2>
-<span className="text-xs font-semibold text-slate-300">{weekLabel}</span>
-<button onClick={openAdminRoleEdit} className="ml-1 flex items-center gap-0.5 rounded bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition" title="관리자 직책 명칭 수정">
-<PencilIcon size={10} /> 직책명 수정
-</button>
-</div>
-<button onClick={() => openAdminInput('ALL')} className="flex items-center gap-1 rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-violet-200 hover:bg-violet-600 transition">
-<LockIcon size={12} /> 입력
-</button>
-</div>
-<div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-{adminRoles.map((role) => {
-const text = currentWeekTexts[role];
-return (
-<div key={role} onClick={() => openAdminInput(role)}
-className="group relative cursor-pointer rounded-xl bg-slate-50 p-3.5 transition hover:bg-violet-50/60 hover:ring-1 hover:ring-violet-300" title={`${role} 근무 현황 입
-력`}>
-<div className="mb-1.5 flex items-center justify-between">
-<p className="text-xs font-extrabold text-slate-600 group-hover:text-violet-600">{role}</p>
-<span className="text-[11px] font-semibold text-violet-400 opacity-0 transition group-hover:opacity-100">수정 ✎</span>
-
-</div>
-<p className={`whitespace-pre-wrap text-[13px] leading-snug
-${text ? "text-slate-600" : "text-slate-300"}`}>
-{text || "특이사항 없음"}
-</p>
-</div>
-);
-})}
-</div>
-</div>
-</>
-)}
-{/* 선택 삭제 확인용 비밀번호 인증 모달 */}
-{deleteModalOpen && (
-<Modal title="선택 삭제 최종 확인" onClose={() =>
-setDeleteModalOpen(false)}>
-<p className="mb-3 text-xs text-slate-500 leading-relaxed">
-선택한 <b>{selectedEventIds.size}개</b>의 일정을 삭제하려면 마스터 비밀
-번호를 입력해주세요. <span className="text-violet-600 font-bold">(기본: 1234)</span>
-</p>
-<FieldLabel>마스터 비밀번호</FieldLabel>
-<input
-type="password"
-autoFocus
-value={deletePwInput}
-onChange={(e) => setDeletePwInput(e.target.value)}
-onKeyDown={(e) => e.key === "Enter" && confirmBatchDelete()}
-className={inputCls}
-placeholder="비밀번호 입력"
-/>
-{deletePwError && <p className="mt-2 text-xs font-semibold text-rose-500">{deletePwError}</p>}
-<div className="mt-4 flex items-center gap-2">
-<button onClick={() => setDeleteModalOpen(false)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={confirmBatchDelete} className="flex-1 rounded-xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition shadow-md shadow-rose-200">삭제 확인</button>
-</div>
-
-</Modal>
-)}
-{/* 1. 엑셀 일괄 업로드 모달 */}
-{uploadModalOpen && (
-<Modal title="학사 일정 엑셀(CSV) 일괄 업로드" onClose={() =>
-setUploadModalOpen(false)} wide>
-<div className="space-y-4">
-<div className="rounded-xl bg-indigo-50/70 p-3.5 border border-indigo-100 text-xs text-indigo-900 leading-relaxed">
-<p className="font-bold mb-1"> 작성 및 업로드 가이드</p>
-<ol className="list-decimal list-inside space-y-0.5 text-slate-600">
-<li>아래 <b>[샘플 양식 다운로드]</b>를 받아 엑셀이나 구글 시트에서
-작성합니다.</li>
-<li>날짜는 <code>2026-10-01</code> 형식으로 적고, 담당부서/학년/행
-사내용/담당자를 채웁니다. (관리자 근무는 담당부서에 <code>관리자근무</code>, 비밀번호
-칸에 직책 입력)</li>
-<li>작성 완료 후 <b>[파일 선택]</b>으로 업로드하고 <b>[DB에 일괄 등
-록]</b>을 누르면 끝납니다.</li>
-</ol>
-</div>
-<div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-<button
-type="button"
-onClick={handleDownloadSampleTemplate}
-className="flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3.5 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-xs"
->
-<DownloadIcon size={14} className="text-indigo-500" />
-샘플 엑셀 양식 다운로드 (.csv)
-</button>
-<div>
-<input
-type="file"
-ref={fileInputRef}
-accept=".csv, text/csv, .txt"
-onChange={handleFileUpload}
-
-className="hidden"
-/>
-<button
-type="button"
-onClick={() => fileInputRef.current && fileInputRef.current.click()}
-className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 transition shadow-sm"
->
-<UploadCloudIcon size={14} />
-작성한 엑셀 파일 선택
-</button>
-</div>
-</div>
-{uploadStatus && (
-<p className={`text-xs font-bold ${uploadParsedEvents.length > 0 ?
-"text-indigo-600" : "text-rose-500"}`}>
-{uploadStatus}
-</p>
-)}
-{uploadParsedEvents.length > 0 && (
-<div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-<p className="text-xs font-bold text-slate-700 mb-2">업로드 대기
-목록 (상위 5개 미리보기)</p>
-<div className="max-h-36 overflow-y-auto space-y-1 pr-1 text-xs">
-{uploadParsedEvents.slice(0, 5).map((item, idx) => (
-<div key={idx} className="flex items-center justify-between rounded bg-white p-1.5 border border-slate-200">
-<span className="font-bold text-indigo-600">{item.date}</span>
-<span className="text-slate-500 truncate max-w-[200px]">{item.content}</span>
-<span className="text-[11px] text-slate-400">[{item.dept || " 전체"}]</span>
-</div>
-))}
-{uploadParsedEvents.length > 5 && (
-<p className="text-[11px] text-slate-400 text-center pt-1">...
-
-외 {uploadParsedEvents.length - 5}개의 일정</p>
-)}
-</div>
-</div>
-)}
-<div className="flex items-center gap-2 pt-2">
-<button
-type="button"
-onClick={() => setUploadModalOpen(false)}
-className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition"
->
-취소
-</button>
-<button
-type="button"
-onClick={handleConfirmUpload}
-disabled={uploadParsedEvents.length === 0}
-className={`flex-1 rounded-xl py-2.5 text-sm font-bold text-white
-transition shadow-md ${
-uploadParsedEvents.length > 0
-? "bg-violet-600 hover:bg-violet-700 shadow-violet-200"
-: "bg-slate-300 cursor-not-allowed"
-}`}
->
-DB에 일괄 등록하기 ({uploadParsedEvents.length}개)
-</button>
-</div>
-</div>
-</Modal>
-)}
-{/* 2. 관리자 마스터 비밀번호 변경 모달 */}
-{masterPwModalOpen && (
-<Modal title="관리자 마스터 비밀번호 변경" onClose={() =>
-setMasterPwModalOpen(false)}>
-<p className="mb-3 text-xs text-slate-500 leading-relaxed">
-부서명 수정 및 관리자 근무 현황 입력 시 사용하는 <b>마스터 인증 비밀번호
-</b>를 변경합니다. <span className="text-violet-600 font-bold">(초기비밀번
-호:1234)</span>
-
-</p>
-<div className="space-y-3">
-<div>
-<FieldLabel>현재 마스터 비밀번호</FieldLabel>
-<input type="password" value={currentPwInput} onChange={(e) =>
-setCurrentPwInput(e.target.value)} className={inputCls} placeholder="현재 비밀번호 입 력" />
-</div>
-<div>
-<FieldLabel>새 마스터 비밀번호</FieldLabel>
-<input type="password" value={newPwInput} onChange={(e) =>
-setNewPwInput(e.target.value)} className={inputCls} placeholder="새 비밀번호 입력" />
-</div>
-<div>
-<FieldLabel>새 마스터 비밀번호 확인</FieldLabel>
-<input type="password" value={newPwConfirmInput} onChange={(e) =>
-setNewPwConfirmInput(e.target.value)} className={inputCls} placeholder="새 비밀번호 다시 입력" />
-</div>
-{masterPwError && <p className="text-xs font-semibold text-rose-500">{masterPwError}</p>}
-{masterPwSuccess && <p className="text-xs font-semibold text-emerald-600">{masterPwSuccess}</p>}
-<div className="flex items-center gap-2 pt-2">
-<button onClick={() => setMasterPwModalOpen(false)}
-className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={handleSaveMasterPassword} className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-bold text-white hover:bg-violet-700 transition shadow-md shadow-violet-200">비밀번호 변경</button>
-</div>
-<div className="pt-2">
-<button onClick={handleResetMasterPassword} className="w-full rounded-xl border border-rose-100 bg-rose-50/70 py-2 text-xs font-bold text-rose-500 hover:bg-rose-100 transition">비밀번호 초기화</button>
-</div>
-</div>
-</Modal>
-
-)}
-{/* 2-1. 관리자 직책명 수정 인증 모달 */}
-{adminRoleModalStage === "password" && (
-<Modal title="관리자 직책명 수정 인증" onClose={() =>
-setAdminRoleModalStage(null)}>
-<FieldLabel>마스터 비밀번호</FieldLabel>
-<input type="password" autoFocus value={adminRolePwInput}
-onChange={(e) => setAdminRolePwInput(e.target.value)} onKeyDown={(e) => e.key ===
-"Enter" && submitAdminRolePassword()} className={inputCls} placeholder="마스터 비 밀번호 입력" />
-{adminRolePwError && <p className="mt-2 text-xs font-semibold text-rose-500">{adminRolePwError}</p>}
-<button onClick={submitAdminRolePassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
-</Modal>
-)}
-{/* 2-2. 관리자 직책명 편집 모달 */}
-{adminRoleModalStage === "edit" && (
-<Modal title="관리자 직책 명칭 수정" onClose={() =>
-setAdminRoleModalStage(null)} wide>
-<div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-{adminRoleEditRows.map((row) => (
-<div key={row.key} className="flex items-center gap-2">
-<input type="text" value={row.value} onChange={(e) =>
-updateAdminRoleRow(row.key, e.target.value)} className={inputCls} placeholder="직책 명" />
-<button onClick={() => setAdminRoleEditRows(prev => prev.filter(r
-=> r.key !== row.key))} title="이 직책 삭제" className="shrink-0 rounded-lg p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition"><XIcon size={16}
-/></button>
-</div>
-))}
-</div>
-<button onClick={() => setAdminRoleEditRows(prev => [...prev, { key:
-`r${Date.now()}`, value: "" }])} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon
-size={14} /> 부서 추가</button>
-
-<div className="mt-4 flex items-center gap-2">
-<button onClick={() => setAdminRoleModalStage(null)}
-className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={saveAdminRoleEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저
-장</button>
-</div>
-</Modal>
-)}
-{/* 3. 재량휴업일 관리 모달 */}
-{holidayModalStage === "password" && (
-<Modal title="재량휴업일 관리 인증" onClose={() =>
-setHolidayModalStage(null)}>
-<FieldLabel>마스터 비밀번호</FieldLabel>
-<input type="password" autoFocus value={holidayPwInput} onChange={(e)
-=> setHolidayPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" &&
-submitHolidayPassword()} className={inputCls} placeholder="마스터 비밀번호 입력" />
-{holidayPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{holidayPwError}</p>}
-<button onClick={submitHolidayPassword} className="mt-4 w-full rounded-xl bg-rose-500 py-2.5 text-sm font-bold text-white hover:bg-rose-600 transition">확인</button>
-</Modal>
-)}
-{holidayModalStage === "edit" && (
-<Modal title="학교 재량휴업일 및 휴일 관리" onClose={() =>
-setHolidayModalStage(null)} wide>
-<div className="space-y-4">
-<div className="rounded-xl bg-rose-50/60 p-3 border border-rose-100">
-<p className="text-xs font-bold text-rose-700 mb-2">새 재량휴업일
-등록</p>
-<div className="flex flex-col sm:flex-row gap-2">
-<input type="date" value={newHolDate} onChange={(e) =>
-setNewHolDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400"
-/>
-<input type="text" value={newHolName} onChange={(e) =>
-
-setNewHolName(e.target.value)} placeholder="휴일 명칭 (예: 개교기념일)"
-className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-rose-400" />
-<button onClick={addCustomHoliday} className="rounded-lg bg-rose-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-600 transition shrink-0">추가</button>
-</div>
-</div>
-<div>
-<p className="text-xs font-bold text-slate-500 mb-2">등록된 재량휴
-업일 목록</p>
-<div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-{Object.keys(customHolidays).length === 0 ? (
-<p className="text-xs text-slate-400 py-2 text-center">등록된 재
-량휴업일이 없습니다.</p>
-) : (
-Object.entries(customHolidays).map(([dStr, name]) => (
-<div key={dStr} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
-<div className="flex items-center gap-2">
-<span className="font-bold text-slate-700">{dStr}</span>
-<span className="rounded bg-rose-100 text-rose-600 px-2 py-0.5 font-bold text-[11px]">{name}</span>
-</div>
-<button onClick={() => removeCustomHoliday(dStr)}
-className="text-slate-400 hover:text-rose-500 transition p-1" title="삭제"><XIcon
-size={14} /></button>
-</div>
-))
-)}
-</div>
-</div>
-<div className="pt-2">
-<button onClick={() => setHolidayModalStage(null)} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">닫기</button>
-</div>
-</div>
-</Modal>
-)}
-
-{/* 4. Supabase Key 모달 */}
-{keyModalOpen && (
-<Modal title="Supabase API Anon Key 설정" onClose={() =>
-setKeyModalOpen(false)} wide>
-<div className="space-y-3">
-<p className="text-xs text-slate-500 leading-relaxed">Supabase 대시보
-드 ➔ <b>Project Settings</b> ➔ <b>API</b> 메뉴에서 복사한 <b>anon (public)</b> 키
-를 아래에 입력해주세요.</p>
-<div>
-<FieldLabel>Anon Key</FieldLabel>
-<textarea rows={4} value={keyInput} onChange={(e) =>
-setKeyInput(e.target.value)} className={inputCls} placeholder="eyJhbGciOiJKV1QiLC..."
-/>
-</div>
-<div className="flex items-center gap-2 pt-2">
-<button onClick={() => setKeyModalOpen(false)} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={handleSaveKey} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저
-장 및 연동</button>
-</div>
-</div>
-</Modal>
-)}
-{/* 5. 일정 추가/수정 모달 */}
-{eventModal && (
-<Modal title={eventModal.mode === "add" ? "일정 추가" : "일정 수정"}
-onClose={closeEventModal} wide>
-<div className="space-y-3">
-<div>
-<FieldLabel>날짜</FieldLabel>
-<input type="date" value={form.date} onChange={(e) => setForm({
-...form, date: e.target.value })} className={inputCls} />
-</div>
-<div className="grid grid-cols-2 gap-3">
-<div>
-<FieldLabel>담당 부서</FieldLabel>
-<select value={form.dept} onChange={(e) => setForm({ ...form, dept:
-e.target.value })} className={inputCls}>
-
-<option value="">미지정</option>
-{depts.map((d) => ( <option key={d} value={d}>{d}</option> ))}
-</select>
-</div>
-<div>
-<FieldLabel>학년 / 구분</FieldLabel>
-<select value={form.grade} onChange={(e) => setForm({ ...form,
-grade: e.target.value })} className={inputCls}>
-<option value="">미지정</option>
-{GRADES.map((g) => ( <option key={g} value={g}>{g}</option> ))}
-</select>
-</div>
-</div>
-<div>
-<FieldLabel>행사 내용</FieldLabel>
-<textarea value={form.content} onChange={(e) => setForm({ ...form,
-content: e.target.value })} rows={2} className={inputCls} placeholder="예) 유초이음 음 악줄넘기(1교시~3교시, 필로티)" />
-</div>
-<div>
-<FieldLabel>담당자 (선택)</FieldLabel>
-<input type="text" value={form.manager} onChange={(e) => setForm({
-...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
-</div>
-{eventModal.mode === "add" ? (
-<div>
-<FieldLabel>비밀번호 (수정/삭제 시 사용할 숫자 4자리)</FieldLabel>
-<input type="password" inputMode="numeric" maxLength={4}
-value={form.password} onChange={(e) => setForm({ ...form, password:
-e.target.value.replace(/\D/g, "").slice(0, 4) })} className={inputCls} placeholder="숫자 4자리" />
-</div>
-) : (
-<div>
-<FieldLabel>비밀번호 (등록 비밀번호 또는 마스터 PW)</FieldLabel>
-<input type="password" value={pwCheckInput} onChange={(e) =>
-setPwCheckInput(e.target.value)} className={inputCls} placeholder="비밀번호 입력" />
-</div>
-)}
-{pwCheckError && <p className="mt-2 text-xs font-semibold text-rose-500">{pwCheckError}</p>}
-
-<div className="flex items-center gap-2 pt-1">
-{eventModal.mode === "edit" && (
-<>
-<button onClick={deleteEvent} className="flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-100 transition" title="일정 삭제"><Trash2Icon
-size={15} /> 삭제</button>
-<button onClick={copyCurrentEvent} className="flex items-center gap-1 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm font-bold text-violet-600 hover:bg-violet-100 transition" title="복사 "><CopyIcon size={15} /> 복사</button>
-</>
-)}
-<button onClick={closeEventModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={saveEvent} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">{eventModal.mode === "add" ? "추가" : "수정"}</button>
-</div>
-</div>
-</Modal>
-)}
-{/* 6. 관리자 근무 현황 인증 모달 */}
-{adminModalStage === "password" && (
-<Modal title="관리자 인증" onClose={closeAdminModal}>
-<FieldLabel>마스터 비밀번호</FieldLabel>
-<input type="password" autoFocus value={adminPwInput} onChange={(e)
-=> setAdminPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" &&
-submitAdminPassword()} className={inputCls} placeholder="비밀번호를 입력하세요" />
-{adminPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{adminPwError}</p>}
-<button onClick={submitAdminPassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
-<p className="mt-2 text-center text-[11px] text-slate-300">기본 마스터
-비밀번호: {MASTER_PASSWORD_DEFAULT}</p>
-</Modal>
-)}
-
-{/* 7. 관리자 근무 현황 작성 및 수정 모달 */}
-{adminModalStage === "edit" && (
-<Modal title={adminTargetRole && adminTargetRole !== 'ALL' ?
-`${adminTargetRole} 근무 현황 작성 및 수정` : `관리자 근무 현황 일괄 작성`}
-onClose={closeAdminModal} wide>
-{adminTargetRole && adminTargetRole !== 'ALL' ? (
-<div className="space-y-3.5">
-<div className="rounded-xl bg-violet-50/70 p-3 border border-violet-100 space-y-2.5">
-<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-<div>
-<FieldLabel>기준 날짜 (필수: 해당 일자 비고란에 자동 매칭됩니
-다)</FieldLabel>
-<input type="date" value={adminTargetDate} onChange={(e) =>
-setAdminTargetDate(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-400"
-/>
-</div>
-<div className="text-right">
-<span className="text-[11px] font-bold text-slate-400 block">
-적용 주간</span>
-<span className="text-xs font-extrabold text-violet-600">{modalWeekCalculated.label} {modalWeekCalculated.dayStr &&
-`[${modalWeekCalculated.dayStr}]`}</span>
-</div>
-</div>
-<div className="pt-2 border-t border-violet-200/60">
-<p className="text-[11px] font-bold text-violet-700 mb-1.5">동행
-관리자 함께 등록 (선택 시 2명 이상에게 동시에 입력됩니다)</p>
-<div className="flex flex-wrap gap-1.5">
-{adminRoles.filter(r => r !== adminTargetRole).map((r) => {
-const isChecked = adminSharedRoles.has(r);
-return (
-<button key={r} type="button" onClick={() =>
-toggleInSet(adminSharedRoles, setAdminSharedRoles, r)} className={`rounded-lg
-px-2.5 py-1 text-xs font-bold border transition ${isChecked ? "bg-violet-600 text-white border-violet-600 shadow-sm" : "bg-white text-slate-600 border-slate-200 hover:bg-violet-50"}`}>
-{isChecked ? `✓ ${r}` : `+ ${r}`}
-</button>
-
-);
-})}
-</div>
-</div>
-</div>
-<div>
-<FieldLabel>{adminTargetRole} 근무 일정 내용 (수정 및 추
-가)</FieldLabel>
-<textarea value={adminCurrentInput} onChange={(e) =>
-setAdminCurrentInput(e.target.value)} rows={3} className={inputCls} placeholder="예) 14:00~16:00 교장단 회의" />
-<div className="mt-2 flex justify-end">
-<button type="button" onClick={stageCurrentAdminItem}
-disabled={! adminCurrentInput.trim()} className={`flex items-center gap-1.5
-rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm
-${adminCurrentInput.trim() ? "bg-violet-100 text-violet-700 hover:bg-violet-200 border border-violet-200" : "bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed"}`}>
-<PlusIcon size={13} /> 임시 추가 (다른 날짜 계속 담기)
-</button>
-</div>
-</div>
-{stagedAdminItems.length > 0 && (
-<div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-3">
-<p className="text-xs font-bold text-violet-800 mb-2 flex items-center justify-between">
-<span>함께 저장될 스케줄 목록 ({stagedAdminItems.length}
-개)</span>
-</p>
-<div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-{stagedAdminItems.map((item) => (
-<div key={item.id} className="flex items-start justify-between rounded-lg bg-white p-2 text-xs border border-violet-100 shadow-2xs">
-<div className="min-w-0 flex-1 pr-2">
-<p className="font-bold text-slate-700">{item.content}</p>
-{item.sharedRoles.length > 0 && (
-
-<p className="text-[10px] text-violet-600 font-semibold mt-0.5">동행: {item.sharedRoles.join(", ")}</p>
-)}
-</div>
-<button type="button" onClick={() =>
-removeStagedItem(item.id)} className="text-slate-300 hover:text-rose-500 p-0.5 transition shrink-0" title="삭제"><XIcon size={14} /></button>
-</div>
-))}
-</div>
-</div>
-)}
-<div>
-<FieldLabel>현재 저장된 전체 내용 직접 편집 및 삭제</FieldLabel>
-<textarea
-value={adminFormTexts[adminTargetRole] || ""}
-onChange={(e) => setAdminFormTexts({ ...adminFormTexts,
-[adminTargetRole]: e.target.value })}
-rows={3}
-className={inputCls}
-placeholder="기존 내역 직접 수정 또는 전체 지우기 가능"
-/>
-<div className="mt-1 flex justify-end">
-<button type="button" onClick={() => setAdminFormTexts({
-...adminFormTexts, [adminTargetRole]: "" })} className="text-xs text-rose-500 hover:text-rose-700 font-bold flex items-center gap-1 transition">
-<Trash2Icon size={12} /> 내용 전체 지우기
-</button>
-</div>
-</div>
-</div>
-) : (
-<div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
-{adminRoles.map((role) => (
-<div key={role}>
-<FieldLabel>{role}</FieldLabel>
-<textarea value={adminFormTexts[role] || ""} onChange={(e) =>
-setAdminFormTexts({ ...adminFormTexts, [role]: e.target.value })} rows={2}
-className={inputCls} placeholder="예) 28(금) 출장" />
-</div>
-
-))}
-</div>
-)}
-<div className="mt-4 flex items-center gap-2">
-<button onClick={closeAdminModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={saveAdminTexts} className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-bold text-white hover:bg-violet-700 transition shadow-md shadow-violet-200">
-{stagedAdminItems.length > 0 ? `일괄 저장
-(${stagedAdminItems.length + (adminCurrentInput.trim() ? 1 : 0)}개)` : "저장 완료"}
-</button>
-</div>
-</Modal>
-)}
-{/* 8. 부서명 수정 인증 모달 */}
-{deptModalStage === "password" && (
-<Modal title="마스터 인증" onClose={closeDeptModal}>
-<FieldLabel>마스터 비밀번호</FieldLabel>
-<input type="password" autoFocus value={deptPwInput} onChange={(e) =>
-setDeptPwInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" &&
-submitDeptPassword()} className={inputCls} placeholder="비밀번호를 입력하세요" />
-{deptPwError && <p className="mt-2 text-xs font-semibold text-rose-500">{deptPwError}</p>}
-<button onClick={submitDeptPassword} className="mt-4 w-full rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">확인</button>
-<p className="mt-2 text-center text-[11px] text-slate-300">기본 마스터
-비밀번호: {MASTER_PASSWORD_DEFAULT}</p>
-</Modal>
-)}
-{/* 9. 부서명 수정 편집 모달 */}
-{deptModalStage === "edit" && (
-<Modal title="담당 부서명 수정" onClose={closeDeptModal} wide>
-<div className="max-h-[55vh] space-y-2 overflow-y-auto pr-1">
-{deptEditRows.map((row) => (
-<div key={row.key} className="flex items-center gap-2">
-
-<input type="text" value={row.value} onChange={(e) =>
-updateDeptRow(row.key, e.target.value)} className={inputCls} placeholder="부서명" />
-<button onClick={() => removeDeptRow(row.key)} title="이 부서 삭제"
-className="shrink-0 rounded-lg p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500 transition"><XIcon size={16} /></button>
-</div>
-))}
-</div>
-<button onClick={addDeptRow} className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-dashed border-slate-200 py-2 text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition"><PlusIcon size={14} /> 부서 추가</button>
-<p className="mt-2 text-[11px] text-slate-400">* 부서명을 삭제하면 해당
-부서로 등록된 일정은 '미지정'으로 변경됩니다.</p>
-<div className="mt-4 flex items-center gap-2">
-<button onClick={closeDeptModal} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 transition">취소</button>
-<button onClick={saveDeptEdits} className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-bold text-white hover:bg-violet-600 transition">저
-장</button>
-</div>
-</Modal>
-)}
-</div>
-</div>
-);
-}
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
