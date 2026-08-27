@@ -416,8 +416,8 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태
-  const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
+  // manager 포함 폼 상태 (담당자 기본값 '홍길동' 반영)
+  const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "홍길동", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [pwCheckInput, setPwCheckInput] = useState("");
@@ -705,7 +705,7 @@ function App() {
           const dept = row[1] || "";
           const grade = row[2] || "";
           const content = row[3] || "";
-          const manager = row[4] || "";
+          const manager = row[4] || "홍길동";
           const col5 = row[5] || "1234";
 
           let dateStr = rawDate.replace(/\./g, "-").replace(/\//g, "-").trim();
@@ -780,17 +780,17 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 날짜(행) 단위 정확한 비고 셀 병합 반영] ====================
+  // ==================== [출력/저장 통합 및 날짜별 독립 비고 셀 렌더링 (병합 버그 완벽 해결)] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // 각 날짜(행)별로 해당되는 관리자 근무 내역을 수집
-    const rowRemarks = activeDays.map(d => {
-      const monDate = startOfWeekMon(d);
+    // 각 날짜(행)별로 해당되는 관리자 근무 내역을 수집하여 반환
+    const getAdminRemarkForDateStrict = (dateObj) => {
+      const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
       const weekAdminData = adminWorkStatus[wKey] || {};
-      const targetDayNum = d.getDate();
+      const targetDayNum = dateObj.getDate();
       const remarks = [];
 
       adminRoles.forEach(role => {
@@ -840,7 +840,7 @@ function App() {
         }
       });
       return remarks.length > 0 ? remarks.join("<br><br>") : "-";
-    });
+    };
 
     let htmlTableContent = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/1999/xlink">
@@ -879,59 +879,27 @@ function App() {
       }).join("\n");
     };
 
-    const rowsData = activeDays.map((d, index) => {
-      const dStr = ymd(d);
+    activeDays.forEach(d => {
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
+      const dStr = ymd(d);
       const hol = getHolidayName(dStr, customHolidays) || "";
       const evList = sortEvents(eventsByDate[dStr] || []);
-      const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
-      const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
-      const remarkHtml = rowRemarks[index];
-      return { dayNum, dowStr, contentText, managerText, remarkHtml };
-    });
-
-    // 엑셀 비고란 셀 병합(rowspan) 처리 로직
-    let i = 0;
-    while (i < rowsData.length) {
-      let currentRemark = rowsData[i].remarkHtml;
-      let spanCount = 1;
       
-      if (currentRemark !== "-") {
-        while (i + spanCount < rowsData.length && rowsData[i + spanCount].remarkHtml === currentRemark) {
-          spanCount++;
-        }
-      } else {
-        while (i + spanCount < rowsData.length && rowsData[i + spanCount].remarkHtml === "-") {
-          spanCount++;
-        }
-      }
+      const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : getCleanContentText(evList);
+      const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "홍길동").join("\n");
+      const remarkHtml = getAdminRemarkForDateStrict(d);
 
-      htmlTableContent += `<tr>
-        <td class="col-date">${rowsData[i].dayNum}</td>
-        <td class="col-dow">${rowsData[i].dowStr}</td>
-        <td class="col-content">${rowsData[i].contentText.replace(/\n/g, '<br>')}</td>
-        <td class="col-manager">${rowsData[i].managerText.replace(/\n/g, '<br>')}</td>`;
-
-      if (spanCount > 1) {
-        htmlTableContent += `<td class="col-remark" rowspan="${spanCount}">${currentRemark}</td>`;
-      } else {
-        htmlTableContent += `<td class="col-remark">${currentRemark}</td>`;
-      }
-      htmlTableContent += `</tr>`;
-
-      for (let j = 1; j < spanCount; j++) {
-        let rIdx = i + j;
-        htmlTableContent += `<tr>
-          <td class="col-date">${rowsData[rIdx].dayNum}</td>
-          <td class="col-dow">${rowsData[rIdx].dowStr}</td>
-          <td class="col-content">${rowsData[rIdx].contentText.replace(/\n/g, '<br>')}</td>
-          <td class="col-manager">${rowsData[rIdx].managerText.replace(/\n/g, '<br>')}</td>
-        </tr>`;
-      }
-
-      i += spanCount;
-    }
+      htmlTableContent += `
+        <tr>
+          <td class="col-date">${dayNum}</td>
+          <td class="col-dow">${dowStr}</td>
+          <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
+          <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
+          <td class="col-remark">${remarkHtml}</td>
+        </tr>
+      `;
+    });
 
     htmlTableContent += `</table></body></html>`;
 
@@ -970,7 +938,7 @@ function App() {
         dept: copiedEvent.dept || "",
         grade: copiedEvent.grade || "",
         content: copiedEvent.content || "",
-        manager: copiedEvent.manager || "",
+        manager: copiedEvent.manager || "홍길동",
         password: copiedEvent.password || ""
       });
     } else {
@@ -982,7 +950,7 @@ function App() {
   };
 
   const openEditEvent = (ev) => {
-    setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, content: ev.content, manager: ev.manager || "", password: ev.password });
+    setForm({ date: ev.date, dept: ev.dept, grade: ev.grade, content: ev.content, manager: ev.manager || "홍길동", password: ev.password });
     setPwCheckInput("");
     setPwCheckError("");
     setEventModal({ mode: "edit", data: ev });
