@@ -1573,8 +1573,8 @@ function App() {
           </div>
         </div>
 
-        {/* 필터 영역 (여유로운 상단 간격 확보 및 담당 부서 그룹 버튼 제거) */}
-        <div className="mb-4 space-y-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        {/* 필터 영역 (학년 상단에만 교감 소관 그룹 버튼 배치, 부서 영역은 완전 깔끔하게 분리) */}
+        <div className="mb-4 space-y-5 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <FilterRow 
             label="학년" 
             items={GRADES} 
@@ -1588,20 +1588,22 @@ function App() {
             ]}
             onSelectGroup={(items) => setSelectedGrades(new Set(items))}
           />
-          <FilterRow 
-            label="담당 부서" 
-            items={depts} 
-            selected={selectedDepts} 
-            onToggle={(v) => toggleInSet(selectedDepts, setSelectedDepts, v)} 
-            onAll={() => setSelectedDepts(new Set(depts))} 
-            onNone={() => setSelectedDepts(new Set())} 
-            editAction={
-              <button onClick={openDeptEdit} title="마스터 권한으로 부서명 수정" className="flex items-center gap-1 rounded-lg bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition">
-                <PencilIcon size={11} /> 부서명 수정
-              </button>
-            } 
-          />
-          <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-100">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
+          <div className="border-t border-slate-100 pt-3">
+            <FilterRow 
+              label="담당 부서" 
+              items={depts} 
+              selected={selectedDepts} 
+              onToggle={(v) => toggleInSet(selectedDepts, setSelectedDepts, v)} 
+              onAll={() => setSelectedDepts(new Set(depts))} 
+              onNone={() => setSelectedDepts(new Set())} 
+              editAction={
+                <button onClick={openDeptEdit} title="마스터 권한으로 부서명 수정" className="flex items-center gap-1 rounded-lg bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-600 hover:bg-violet-200 transition">
+                  <PencilIcon size={11} /> 부서명 수정
+                </button>
+              } 
+            />
+          </div>
+          <p className="text-[11px] text-slate-400 pt-2 border-t border-slate-100">* 학년/부서가 미지정인 일정은 필터와 관계없이 항상 표시됩니다.</p>
         </div>
 
         {/* 공지 및 협의사항 입력 공간 */}
