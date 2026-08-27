@@ -416,6 +416,7 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
+  // manager 포함 폼 상태 (기본값 빈칸)
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -779,11 +780,12 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 일자/비고 셀 병합, 담당자 병합 해제, 빈 담당자 '-' 처리] ====================
+  // ==================== [출력/저장 통합 및 1일 1행 원칙(줄바꿈 1:1 매칭, 비고란 단일 셀 병합 렌더링)] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
+    // 각 날짜별 관리자 근무 현황을 텍스트 줄바꿈 형태로 정돈
     const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
@@ -795,13 +797,6 @@ function App() {
         if (role.includes("교장") || role.includes("교감")) {
           const text = weekAdminData[role];
           if (text && text !== "특이사항 없음") {
-            let formalRole = role;
-            if (role.includes("교장")) formalRole = "교장선생님";
-            else if (role.includes("교감")) {
-              const subType = role.match(/\((.*?)\)/);
-              formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
-            }
-
             const lines = text.split(/\r\n|\n/);
             lines.forEach(line => {
               const tLine = line.trim();
@@ -813,23 +808,12 @@ function App() {
                 if (lineDayNum === targetDayNum) {
                   const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
                   if (contentOnly) {
-                    const timeMatch = contentOnly.match(/^([\d:]+~[\d:]+)\s+(.+)$/);
-                    if (timeMatch) {
-                      const timePart = timeMatch[1];
-                      let descPart = timeMatch[2];
-                      if (descPart.includes(",")) {
-                        const parts = descPart.split(",");
-                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
-                      }
-                      remarks.push(`${timePart}<br>${descPart}<br>${formalRole}`);
-                    } else {
-                      let descPart = contentOnly;
-                      if (descPart.includes(",")) {
-                        const parts = descPart.split(",");
-                        descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
-                      }
-                      remarks.push(`${descPart}<br>${formalRole}`);
+                    let descPart = contentOnly;
+                    if (descPart.includes(",")) {
+                      const parts = descPart.split(",");
+                      descPart = parts[0].trim() + "<br>" + parts.slice(1).join(",").trim();
                     }
+                    remarks.push(descPart);
                   }
                 }
               }
@@ -837,7 +821,7 @@ function App() {
           }
         }
       });
-      return remarks.length > 0 ? remarks.join("<br><br>") : "-";
+      return remarks.length > 0 ? remarks.join("<br>") : "";
     };
 
     let htmlTableContent = `
@@ -852,7 +836,7 @@ function App() {
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
           .col-content { width: 680px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.2; }
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: center; font-size: 7pt; color: #1e293b; line-height: 1.3; }
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -868,86 +852,44 @@ function App() {
           </tr>
     `;
 
-    // 날짜별로 행 데이터를 생성하여 flatRows에 담기 (담당자 미입력시 '-')
-    const flatRows = [];
+    // 1일 = 1행(TR)으로 렌더링하여 내용과 담당자를 1:1 줄바꿈(<br>)으로 완벽히 매칭
     activeDays.forEach(d => {
-      const dStr = ymd(d);
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
+      const dStr = ymd(d);
       const hol = getHolidayName(dStr, customHolidays) || "";
       const evList = sortEvents(eventsByDate[dStr] || []);
-      const remarkHtml = getAdminRemarkForDateStrict(d);
+
+      let contentHtml = "";
+      let managerHtml = "";
 
       if (evList.length === 0) {
-        flatRows.push({
-          dayNum,
-          dowStr,
-          contentText: hol ? `[휴일] ${hol}` : "-",
-          managerText: "-",
-          remarkHtml,
-          dateKey: dStr
-        });
+        contentHtml = hol ? `[휴일] ${hol}` : "";
+        managerHtml = "";
       } else {
-        evList.forEach((ev, evIdx) => {
-          flatRows.push({
-            dayNum: evIdx === 0 ? dayNum : "",
-            dowStr: evIdx === 0 ? dowStr : "",
-            contentText: (ev.content || "").replace(/^\[.*?\]\s*/, "").trim(),
-            managerText: ev.manager ? ev.manager.trim() : "-",
-            remarkHtml,
-            dateKey: dStr
-          });
+        const contents = [];
+        const managers = [];
+        evList.forEach(ev => {
+          const cleanText = (ev.content || "").replace(/^\[.*?\]\s*/, "").trim();
+          contents.push(cleanText);
+          managers.push(ev.manager && ev.manager.trim() ? ev.manager.trim() : "-");
         });
+        contentHtml = contents.join("<br>");
+        managerHtml = managers.join("<br>");
       }
+
+      const remarkHtml = getAdminRemarkForDateStrict(d);
+
+      htmlTableContent += `
+        <tr>
+          <td class="col-date">${dayNum}</td>
+          <td class="col-dow">${dowStr}</td>
+          <td class="col-content">${contentHtml}</td>
+          <td class="col-manager">${managerHtml}</td>
+          <td class="col-remark">${remarkHtml}</td>
+        </tr>
+      `;
     });
-
-    // 일자(날짜) 및 비고란은 동일 날짜별로 세로 병합(rowspan), 담당자 칸은 절대 병합하지 않음
-    let i = 0;
-    while (i < flatRows.length) {
-      let currentDateKey = flatRows[i].dateKey;
-      let spanCount = 1;
-
-      while (i + spanCount < flatRows.length && flatRows[i + spanCount].dateKey === currentDateKey) {
-        spanCount++;
-      }
-
-      htmlTableContent += `<tr>`;
-      
-      // 일자 및 요일 셀 병합
-      if (spanCount > 1) {
-        htmlTableContent += `<td class="col-date" rowspan="${spanCount}">${flatRows[i].dayNum}</td>`;
-        htmlTableContent += `<td class="col-dow" rowspan="${spanCount}">${flatRows[i].dowStr}</td>`;
-      } else {
-        htmlTableContent += `<td class="col-date">${flatRows[i].dayNum}</td>`;
-        htmlTableContent += `<td class="col-dow">${flatRows[i].dowStr}</td>`;
-      }
-
-      // 내용 (개별 출력)
-      htmlTableContent += `<td class="col-content">${flatRows[i].contentText.replace(/\n/g, '<br>')}</td>`;
-      
-      // 담당자 (병합하지 않고 행마다 각각 출력)
-      htmlTableContent += `<td class="col-manager">${flatRows[i].managerText.replace(/\n/g, '<br>')}</td>`;
-
-      // 비고란 (날짜별로 병합 적용)
-      if (spanCount > 1) {
-        htmlTableContent += `<td class="col-remark" rowspan="${spanCount}">${flatRows[i].remarkHtml}</td>`;
-      } else {
-        htmlTableContent += `<td class="col-remark">${flatRows[i].remarkHtml}</td>`;
-      }
-
-      htmlTableContent += `</tr>`;
-
-      // 남은 서브 행들 렌더링 (내용과 담당자만 개별 출력)
-      for (let j = 1; j < spanCount; j++) {
-        let rIdx = i + j;
-        htmlTableContent += `<tr>
-          <td class="col-content">${flatRows[rIdx].contentText.replace(/\n/g, '<br>')}</td>
-          <td class="col-manager">${flatRows[rIdx].managerText.replace(/\n/g, '<br>')}</td>
-        </tr>`;
-      }
-
-      i += spanCount;
-    }
 
     htmlTableContent += `</table></body></html>`;
 
@@ -1823,7 +1765,7 @@ function App() {
                 <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={2} className={inputCls} placeholder="예) 유초이음 음악줄넘기(1교시~3교시, 필로티)" />
               </div>
               <div>
-                <FieldLabel>담당자</FieldLabel>
+                <FieldLabel>담당자 (선택)</FieldLabel>
                 <input type="text" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} className={inputCls} placeholder="예) 홍길동" />
               </div>
               {eventModal.mode === "add" ? (
