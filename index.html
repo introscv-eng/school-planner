@@ -416,7 +416,6 @@ function App() {
 
   const isFirstDeptsLoadedRef = useRef(false);
 
-  // manager 포함 폼 상태 (담당자 기본값 비워두고 예시 적용)
   const emptyForm = { date: ymd(today), dept: "", grade: "", content: "", manager: "", password: "" };
   const [eventModal, setEventModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -780,7 +779,7 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 날짜(일자)와 비고란 병합, 담당자 병합 해제] ====================
+  // ==================== [출력/저장 통합 및 일자/비고 셀 병합, 담당자 병합 해제, 빈 담당자 '-' 처리] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
@@ -869,18 +868,9 @@ function App() {
           </tr>
     `;
 
-    const getCleanContentText = (evList) => {
-      if (evList.length === 0) return "-";
-      return evList.map(ev => {
-        let raw = ev.content || "";
-        let cleaned = raw.replace(/^\[.*?\]\s*/, "").trim();
-        return cleaned;
-      });
-    };
-
-    // 각 날짜별 행 데이터를 평탄화하여 생성 (담당자 칸은 병합하지 않고 행마다 개별 출력)
+    // 날짜별로 행 데이터를 생성하여 flatRows에 담기 (담당자 미입력시 '-')
     const flatRows = [];
-    activeDays.forEach((d, index) => {
+    activeDays.forEach(d => {
       const dStr = ymd(d);
       const dayNum = d.getDate();
       const dowStr = WEEKDAY_KOR[d.getDay()];
@@ -903,7 +893,7 @@ function App() {
             dayNum: evIdx === 0 ? dayNum : "",
             dowStr: evIdx === 0 ? dowStr : "",
             contentText: (ev.content || "").replace(/^\[.*?\]\s*/, "").trim(),
-            managerText: ev.manager || "-",
+            managerText: ev.manager ? ev.manager.trim() : "-",
             remarkHtml,
             dateKey: dStr
           });
@@ -911,7 +901,7 @@ function App() {
       }
     });
 
-    // 날짜별로 그룹화하여 일자 칸과 비고란은 rowspan 적용, 담당자 칸은 절대 병합 안 함
+    // 일자(날짜) 및 비고란은 동일 날짜별로 세로 병합(rowspan), 담당자 칸은 절대 병합하지 않음
     let i = 0;
     while (i < flatRows.length) {
       let currentDateKey = flatRows[i].dateKey;
@@ -935,7 +925,7 @@ function App() {
       // 내용 (개별 출력)
       htmlTableContent += `<td class="col-content">${flatRows[i].contentText.replace(/\n/g, '<br>')}</td>`;
       
-      // 담당자 (병합하지 않고 개별 행에 각각 출력)
+      // 담당자 (병합하지 않고 행마다 각각 출력)
       htmlTableContent += `<td class="col-manager">${flatRows[i].managerText.replace(/\n/g, '<br>')}</td>`;
 
       // 비고란 (날짜별로 병합 적용)
@@ -947,7 +937,7 @@ function App() {
 
       htmlTableContent += `</tr>`;
 
-      // 남은 서브 행들 렌더링 (내용과 담당자만 출력)
+      // 남은 서브 행들 렌더링 (내용과 담당자만 개별 출력)
       for (let j = 1; j < spanCount; j++) {
         let rIdx = i + j;
         htmlTableContent += `<tr>
@@ -1461,7 +1451,7 @@ function App() {
             )}
             <button
               onClick={() => { setUploadModalOpen(true); setUploadParsedEvents([]); setUploadStatus(""); }}
-              className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-white px-3 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition shadow-2xs"
+              className="flex items-center gap-1 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 shadow-sm hover:bg-indigo-100 transition"
             >
               <UploadCloudIcon size={14} /> 엑셀 일괄 업로드
             </button>
