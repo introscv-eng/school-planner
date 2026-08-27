@@ -684,48 +684,54 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장 통합 및 비고란(교장/교감님) 추가 최적화] ====================
+  // ==================== [출력/저장 통합 및 날짜별 교장/교감 일정 매칭 및 글자크기 7pt 적용] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     
-    // 해당 날짜의 주간 시작일(월요일) 키를 구해서 관리자 근무 현황을 가져오는 헬퍼 함수
-    const getAdminRemarkForDate = (dateObj) => {
+    // 특정 날짜에 해당하는 교장 및 교감(교무/생활 등)의 일정만 엄격하게 파싱하여 추출
+    const getAdminRemarkForDateStrict = (dateObj) => {
       const monDate = startOfWeekMon(dateObj);
       const wKey = ymd(monDate);
       const weekAdminData = adminWorkStatus[wKey] || {};
       
+      const targetDayNum = dateObj.getDate();
       const remarks = [];
+
       adminRoles.forEach(role => {
-        const text = weekAdminData[role];
-        if (text && text !== "특이사항 없음") {
-          // 직함에 '님' 붙이기 (교장 -> 교장님, 교감(교무) -> 교감(교무)님 등)
-          let formalRole = role;
-          if (role.includes("교장") || role.includes("교감")) {
-            formalRole = role.endsWith("님") ? role : `${role}님`;
-          }
-          
-          // 해당 날짜(예: "1일", "3(목)" 등)가 포함된 줄만 추출하거나 전체 출력
-          const dayNumStr = String(dateObj.getDate());
-          const lines = text.split(/\r\n|\n/);
-          const matchedLines = lines.filter(line => line.includes(dayNumStr) || line.includes(`${dayNumStr}일`));
-          
-          if (matchedLines.length > 0) {
-            matchedLines.forEach(ml => {
-              // 날짜 접두사(예: "1(화) ")를 제거하고 내용만 깔끔하게 정돈
-              const cleanLine = ml.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
-              remarks.push(`${cleanLine} ${formalRole}`);
-            });
-          } else {
-            // 날짜가 명시되지 않았거나 주간 전체 요약인 경우 그대로 반영
-            // (사용자 요청하신 첨부파일 비고란 형식: "13:00~16:30 교장님", "12:30~16:30 이교감님")
-            lines.forEach(l => {
-              const cleanLine = l.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
-              if (cleanLine) remarks.push(`${cleanLine} ${formalRole}`);
+        // 교장 또는 교감 직책인 경우에만 추출
+        if (role.includes("교장") || role.includes("교감")) {
+          const text = weekAdminData[role];
+          if (text && text !== "특이사항 없음") {
+            // 직함 명칭 변경: 교장 -> 교장선생님, 교감(교무) -> 교감선생님(교무) 등
+            let formalRole = role;
+            if (role.includes("교장")) formalRole = "교장선생님";
+            else if (role.includes("교감")) {
+              const subType = role.match(/\((.*?)\)/);
+              formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
+            }
+
+            const lines = text.split(/\r\n|\n/);
+            lines.forEach(line => {
+              const tLine = line.trim();
+              if (!tLine) return;
+              
+              // 날짜 패턴 매칭 (예: "7(월)", "3(목)", "7일" 등)
+              const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
+              if (match) {
+                const lineDayNum = parseInt(match[1], 10);
+                if (lineDayNum === targetDayNum) {
+                  // 날짜 부분 제거한 순수 내용 추출 (예: "14:00~16:00 교장단 회의...")
+                  const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+                  if (contentOnly) {
+                    remarks.push(`${contentOnly}<br>${formalRole}`);
+                  }
+                }
+              }
             });
           }
         }
       });
-      return remarks.join("\n");
+      return remarks.join("<br><br>");
     };
 
     let htmlTableContent = `
@@ -740,7 +746,7 @@ function App() {
           .col-dow { width: 50px; text-align: center; font-size: 10pt; }
           .col-content { width: 420px; white-space: pre-wrap; text-align: left; }
           .col-manager { width: 100px; text-align: center; font-size: 10pt; }
-          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 9pt; color: #475569; }
+          .col-remark { width: 140px; white-space: pre-wrap; text-align: left; font-size: 7pt; color: #1e293b; line-height: 1.2; } /* 비고란 글자크기 7pt 및 줄바꿈 적용 */
           .title { font-size: 16pt; font-weight: bold; text-align: center; border: none; padding-bottom: 15px; }
         </style>
       </head>
@@ -766,7 +772,7 @@ function App() {
         
         const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
-        const remarkText = getAdminRemarkForDate(d);
+        const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
         htmlTableContent += `
           <tr>
@@ -774,7 +780,7 @@ function App() {
             <td class="col-dow">${dowStr}</td>
             <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
             <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
-            <td class="col-remark">${remarkText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkHtml}</td>
           </tr>
         `;
       });
@@ -788,7 +794,7 @@ function App() {
         
         const contentText = evList.length === 0 ? (hol ? `[휴일] ${hol}` : "-") : evList.map(ev => `[${tagLabel(ev)}] ${ev.content}`).join("\n");
         const managerText = evList.length === 0 ? "-" : evList.map(ev => ev.manager || "-").join("\n");
-        const remarkText = getAdminRemarkForDate(d);
+        const remarkHtml = getAdminRemarkForDateStrict(d) || "-";
 
         htmlTableContent += `
           <tr>
@@ -796,7 +802,7 @@ function App() {
             <td class="col-dow">${dowStr}</td>
             <td class="col-content">${contentText.replace(/\n/g, '<br>')}</td>
             <td class="col-manager">${managerText.replace(/\n/g, '<br>')}</td>
-            <td class="col-remark">${remarkText.replace(/\n/g, '<br>')}</td>
+            <td class="col-remark">${remarkHtml}</td>
           </tr>
         `;
       });
