@@ -780,12 +780,13 @@ function App() {
 
   const handleConfirmUpload = async () => {};
 
-  // ==================== [출력/저장: 1일 1행 원칙 + 진정한 Alt+Enter 줄바꿈 실현] ====================
+   // ==================== [출력/저장: 1일 1행 원칙 + 진정한 Alt+Enter 줄바꿈 실현] ====================
   const handlePrint = () => {
     const isMonth = tab === "month";
     const activeDays = isMonth ? monthDays : weekDates;
 
-    // Excel 전용 줄바꿈(&#10;) 엔티티로 변환하여 셀 내부에서 Alt + Enter 효과 발동
+    // ★ 핵심 수정: 셀 내부 줄바꿈은 <br style="mso-data-placement:same-cell"> 로 처리해야
+    //   Excel 모든 버전에서 Alt+Enter 효과(한 셀 안 여러 줄)가 확실하게 적용됩니다.
     const escapeToExcelCell = (str) => {
       if (!str) return "";
       return String(str)
@@ -793,7 +794,8 @@ function App() {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
-        .replace(/\r\n|\n|\r/g, "&#10;");
+        // 이스케이프 이후에 줄바꿈을 <br> 태그로 치환 (태그가 그대로 살아남도록 마지막에 처리)
+        .replace(/\r\n|\n|\r/g, '<br style="mso-data-placement:same-cell;" />');
     };
 
     // 해당 날짜의 관리자 근무 내역을 진정한 줄바꿈(\n)으로 통합 추출
@@ -811,7 +813,7 @@ function App() {
             let formalRole = role;
             if (role.includes("교장")) formalRole = "교장선생님";
             else if (role.includes("교감")) {
-              const subType = role.match(/\((.*?)\)/);
+              const subType = role.match(/$$(.*?)$$/);
               formalRole = subType ? `교감선생님(${subType[1]})` : "교감선생님";
             }
 
@@ -819,12 +821,12 @@ function App() {
             lines.forEach(line => {
               const tLine = line.trim();
               if (!tLine) return;
-              
-              const match = tLine.match(/^(\d{1,2})\s*\(([월화수목금토일])\)/);
+
+              const match = tLine.match(/^(\d{1,2})\s*$$([월화수목금토일])$$/);
               if (match) {
                 const lineDayNum = parseInt(match[1], 10);
                 if (lineDayNum === targetDayNum) {
-                  const contentOnly = tLine.replace(/^\d{1,2}\s*\([월화수목금토일]\)\s*/, '').trim();
+                  const contentOnly = tLine.replace(/^\d{1,2}\s*$$[월화수목금토일]$$\s*/, '').trim();
                   if (contentOnly) {
                     let descPart = contentOnly;
                     if (descPart.includes(",")) {
@@ -870,8 +872,8 @@ function App() {
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             font-size: 11pt;
             vertical-align: middle;
-            mso-data-placement: same-cell;
-            white-space: pre-wrap;
+            mso-data-placement: same-cell;  /* 셀 병합 없이 한 셀 안에 여러 줄 유지 */
+            white-space: pre-wrap;           /* 줄바꿈/공백 보존 */
           }
           th { background-color: #f2f2f2; font-weight: bold; text-align: center; vertical-align: middle; }
           .col-date { width: 45px; text-align: center; font-size: 10pt; vertical-align: middle; }
@@ -918,6 +920,7 @@ function App() {
           managers.push(ev.manager && ev.manager.trim() ? ev.manager.trim() : "-");
         });
 
+        // 각 일정을 줄바꿈(\n)으로 연결 → escapeToExcelCell 에서 <br>로 변환됨
         contentRaw = contents.join("\n");
         managerRaw = managers.join("\n");
       }
